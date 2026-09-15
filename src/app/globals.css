@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, "Times New Roman", serif;
+
+  /* Warm paper neutrals */
+  --color-canvas: #faf8f4;
+  --color-surface: #ffffff;
+  --color-sunken: #f3f0ea;
+  --color-line: #e7e2d9;
+  --color-line-strong: #d6cfc2;
+
+  /* Ink */
+  --color-ink: #1c2420;
+  --color-ink-muted: #5b6660;
+  --color-ink-subtle: #8a938d;
+
+  /* Brand: deep forest + sage */
+  --color-brand-50: #eef5f0;
+  --color-brand-100: #d7e8dc;
+  --color-brand-200: #b1d1bb;
+  --color-brand-500: #3d7a55;
+  --color-brand-600: #2f6445;
+  --color-brand-700: #244f37;
+  --color-brand-800: #1b3c2a;
+  --color-brand-900: #132b1e;
+
+  /* Status */
+  --color-amber-soft: #fbf1dc;
+  --color-amber-ink: #8a5a0b;
+  --color-sky-soft: #e5eff8;
+  --color-sky-ink: #25577f;
+  --color-rose-soft: #f9e6e3;
+  --color-rose-ink: #9b3326;
+  --color-stone-soft: #efece6;
+  --color-stone-ink: #5d5850;
+
+  --shadow-card: 0 1px 2px rgb(28 36 32 / 0.04), 0 1px 1px rgb(28 36 32 / 0.03);
+  --shadow-pop: 0 12px 32px -8px rgb(28 36 32 / 0.18), 0 2px 6px rgb(28 36 32 / 0.06);
+
+  --animate-fade-up: fade-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+dialog::backdrop {
+  background: rgb(19 43 30 / 0.35);
+  backdrop-filter: blur(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
