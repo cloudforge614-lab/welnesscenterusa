@@ -1,7 +1,9 @@
 import "server-only";
 
 import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
+import { cachedPublic, TTL } from "@/lib/cache/public-cache";
+import { TAGS } from "@/lib/cache/tags";
 
 // Deliberately separate from src/lib/products/queries.ts (the owner-side
 // module). That file's return types carry status, click stats, and other
@@ -119,7 +121,7 @@ type ProductQueryOptions = {
 // name/slug substring, paginated" and previously would have triplicated the
 // same pagination + PGRST103-past-the-end handling three times over.
 async function queryPublicProducts(options: ProductQueryOptions): Promise<PublicProductList> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const safePage = Number.isFinite(options.page) && options.page > 0 ? Math.floor(options.page) : 1;
   const from = (safePage - 1) * PUBLIC_PAGE_SIZE;
   const search = options.search ? sanitizePublicSearch(options.search) : "";
@@ -173,9 +175,9 @@ async function queryPublicProducts(options: ProductQueryOptions): Promise<Public
   };
 }
 
-export async function listPublicProducts(page: number): Promise<PublicProductList> {
+export const listPublicProducts = cachedPublic("products:listPublicProducts", [TAGS.products, TAGS.categories], TTL.feed, async (page: number): Promise<PublicProductList> => {
   return queryPublicProducts({ page });
-}
+});
 
 export async function searchPublicProducts(rawQuery: unknown, page: number): Promise<PublicProductList & { query: string }> {
   const query = sanitizePublicSearch(rawQuery);
@@ -187,8 +189,8 @@ export async function searchPublicProducts(rawQuery: unknown, page: number): Pro
 // Every eligible slug, for the sitemap. Products are expected to scale into
 // the thousands, so this pages through in batches rather than assuming one
 // request returns everything.
-export async function getAllPublicSlugs(): Promise<{ slug: string; updatedAt: string }[]> {
-  const supabase = await createClient();
+export const getAllPublicSlugs = cachedPublic("products:getAllPublicSlugs", [TAGS.products], TTL.sitemap, async (): Promise<{ slug: string; updatedAt: string }[]> => {
+  const supabase = createPublicClient();
   const batchSize = 1000;
   const slugs: { slug: string; updatedAt: string }[] = [];
 
@@ -210,7 +212,7 @@ export async function getAllPublicSlugs(): Promise<{ slug: string; updatedAt: st
   }
 
   return slugs;
-}
+});
 
 export type PublicProductDetail = {
   id: string;
@@ -251,9 +253,9 @@ type DetailRow = {
 
 // cache(): generateMetadata and the page component both need this for the
 // same request; React dedupes the underlying fetch within one render pass.
-export const getPublicProduct = cache(async (slug: string): Promise<PublicProductDetail | null> => {
+export const getPublicProduct = cache(cachedPublic("products:getPublicProduct", [TAGS.products, TAGS.categories], TTL.detail, async (slug: string): Promise<PublicProductDetail | null> => {
   if (!slug) return null;
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const { data, error } = await supabase
     .from("products")
@@ -303,11 +305,11 @@ export const getPublicProduct = cache(async (slug: string): Promise<PublicProduc
       .map((pc) => pc.categories)
       .filter((c): c is { id: string; name: string; slug: string } => c !== null),
   };
-});
+}));
 
-export async function getRelatedProducts(productId: string, categoryIds: string[], limit = 4): Promise<PublicProductSummary[]> {
+export const getRelatedProducts = cachedPublic("products:getRelatedProducts", [TAGS.products, TAGS.categories], TTL.detail, async (productId: string, categoryIds: string[], limit: number = 4): Promise<PublicProductSummary[]> => {
   if (categoryIds.length === 0) return [];
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const { data, error } = await supabase
     .from("products")
@@ -335,7 +337,7 @@ export async function getRelatedProducts(productId: string, categoryIds: string[
     if (seen.size >= limit) break;
   }
   return [...seen.values()];
-}
+});
 
 export type PublicSeoMetadata = {
   title: string | null;
@@ -351,11 +353,11 @@ export type PublicSeoMetadata = {
 // modules (reviews/comparisons/articles/guides) can reuse this instead of
 // duplicating the same five-column select — seo_metadata is already a
 // polymorphic table keyed on (entity_type, entity_id) for exactly this.
-export async function getSeoMetadata(
+export const getSeoMetadata = cachedPublic("products:getSeoMetadata", [TAGS.seo], TTL.detail, async (
   entityType: "product" | "category" | "review" | "comparison" | "article" | "guide",
   entityId: string,
-): Promise<PublicSeoMetadata | null> {
-  const supabase = await createClient();
+): Promise<PublicSeoMetadata | null> => {
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("seo_metadata")
     .select("title, meta_description, og_title, og_description, og_image_path, robots_index, robots_follow")
@@ -374,7 +376,7 @@ export async function getSeoMetadata(
     robotsIndex: data.robots_index,
     robotsFollow: data.robots_follow,
   };
-}
+});
 
 export async function getProductSeoMetadata(productId: string): Promise<PublicSeoMetadata | null> {
   return getSeoMetadata("product", productId);
@@ -406,8 +408,8 @@ export type PublicCategoryWithCount = PublicCategory & { productCount: number };
 // Used by /categories: only categories that currently have at least one
 // eligible product are listed, so every link on that page leads somewhere
 // with real content rather than a guaranteed-empty page.
-export async function getPublicCategoriesWithProducts(): Promise<PublicCategoryWithCount[]> {
-  const supabase = await createClient();
+export const getPublicCategoriesWithProducts = cachedPublic("products:getPublicCategoriesWithProducts", [TAGS.categories, TAGS.products], TTL.feed, async (): Promise<PublicCategoryWithCount[]> => {
+  const supabase = createPublicClient();
 
   const { data: categories, error: categoriesError } = await supabase
     .from("categories")
@@ -433,15 +435,15 @@ export async function getPublicCategoriesWithProducts(): Promise<PublicCategoryW
   return categories
     .map((c) => ({ ...c, productCount: counts.get(c.id) ?? 0 }))
     .filter((c) => c.productCount > 0);
-}
+});
 
 // Used by /categories/[slug]: the category itself is looked up independent
 // of whether it currently has eligible products, so a category that's
 // temporarily empty still resolves (and renders its own empty state) rather
 // than 404ing — only a genuinely nonexistent slug should 404.
-export async function getPublicCategory(slug: string): Promise<PublicCategory | null> {
+export const getPublicCategory = cachedPublic("products:getPublicCategory", [TAGS.categories], TTL.detail, async (slug: string): Promise<PublicCategory | null> => {
   if (!slug) return null;
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("categories")
     .select("id, name, slug, description")
@@ -449,25 +451,25 @@ export async function getPublicCategory(slug: string): Promise<PublicCategory | 
     .maybeSingle();
   if (error) throw new Error(`Failed to load category: ${error.message}`);
   return data;
-}
+});
 
-export async function getCategoryProducts(categoryId: string, page: number): Promise<PublicProductList> {
+export const getCategoryProducts = cachedPublic("products:getCategoryProducts", [TAGS.products, TAGS.categories], TTL.feed, async (categoryId: string, page: number): Promise<PublicProductList> => {
   return queryPublicProducts({ page, categoryId });
-}
+});
 
 // For the sitemap — mirrors getPublicCategoriesWithProducts's eligibility
 // rule (only categories with at least one eligible product are indexable).
-export async function getAllPublicCategorySlugs(): Promise<{ slug: string }[]> {
+export const getAllPublicCategorySlugs = cachedPublic("products:getAllPublicCategorySlugs", [TAGS.categories], TTL.sitemap, async (): Promise<{ slug: string }[]> => {
   const categories = await getPublicCategoriesWithProducts();
   return categories.map((c) => ({ slug: c.slug }));
-}
+});
 
 // ============================================================================
 // Homepage support
 // ============================================================================
 
-export async function getLatestPublicProducts(limit = 8): Promise<PublicProductSummary[]> {
-  const supabase = await createClient();
+export const getLatestPublicProducts = cachedPublic("products:getLatestPublicProducts", [TAGS.products, TAGS.categories], TTL.feed, async (limit: number = 8): Promise<PublicProductSummary[]> => {
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("products")
     .select(PRODUCT_SUMMARY_SELECT)
@@ -478,4 +480,4 @@ export async function getLatestPublicProducts(limit = 8): Promise<PublicProductS
     .limit(limit);
   if (error) throw new Error(`Failed to load latest products: ${error.message}`);
   return ((data ?? []) as unknown as SummaryRow[]).map(summaryFromRow);
-}
+});

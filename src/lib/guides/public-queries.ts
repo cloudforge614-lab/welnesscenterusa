@@ -1,7 +1,9 @@
 import "server-only";
 
 import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
+import { cachedPublic, TTL } from "@/lib/cache/public-cache";
+import { TAGS } from "@/lib/cache/tags";
 import { getSeoMetadata, sanitizePublicSearch, type PublicSeoMetadata } from "@/lib/products/public-queries";
 import { markdownExcerpt } from "@/lib/content/markdown";
 import { SEARCH_RESULT_LIMIT } from "@/lib/search/types";
@@ -55,8 +57,8 @@ function summaryFromRow(row: GuideRow): PublicGuideSummary {
 
 export type PublicGuideList = { items: PublicGuideSummary[]; totalCount: number; pageCount: number };
 
-export async function listPublicGuides(page: number): Promise<PublicGuideList> {
-  const supabase = await createClient();
+export const listPublicGuides = cachedPublic("guides:listPublicGuides", [TAGS.guides], TTL.feed, async (page: number): Promise<PublicGuideList> => {
+  const supabase = createPublicClient();
   const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
   const from = (safePage - 1) * GUIDES_PAGE_SIZE;
 
@@ -80,7 +82,7 @@ export async function listPublicGuides(page: number): Promise<PublicGuideList> {
   const rows = (result.data ?? []) as unknown as GuideRow[];
   const totalCount = result.count ?? 0;
   return { items: rows.map(summaryFromRow), totalCount, pageCount: Math.max(1, Math.ceil(totalCount / GUIDES_PAGE_SIZE)) };
-}
+});
 
 export type PublicGuideDetail = {
   id: string;
@@ -107,9 +109,9 @@ type RelatedRow = {
   } | null;
 };
 
-export const getPublicGuide = cache(async (slug: string): Promise<PublicGuideDetail | null> => {
+export const getPublicGuide = cache(cachedPublic("guides:getPublicGuide", [TAGS.guides, TAGS.products, TAGS.categories], TTL.detail, async (slug: string): Promise<PublicGuideDetail | null> => {
   if (!slug) return null;
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const { data, error } = await supabase
     .from("guides")
@@ -156,10 +158,10 @@ export const getPublicGuide = cache(async (slug: string): Promise<PublicGuideDet
     category: row.categories,
     relatedProducts,
   };
-});
+}));
 
-export async function getAllPublicGuideSlugs(): Promise<{ slug: string; updatedAt: string }[]> {
-  const supabase = await createClient();
+export const getAllPublicGuideSlugs = cachedPublic("guides:getAllPublicGuideSlugs", [TAGS.guides], TTL.sitemap, async (): Promise<{ slug: string; updatedAt: string }[]> => {
+  const supabase = createPublicClient();
   const batchSize = 1000;
   const slugs: { slug: string; updatedAt: string }[] = [];
 
@@ -177,7 +179,7 @@ export async function getAllPublicGuideSlugs(): Promise<{ slug: string; updatedA
   }
 
   return slugs;
-}
+});
 
 export function getGuideSeoMetadata(guideId: string): Promise<PublicSeoMetadata | null> {
   return getSeoMetadata("guide", guideId);
@@ -190,8 +192,8 @@ export function getGuideSeoMetadata(guideId: string): Promise<PublicSeoMetadata 
 
 // Product page's "Featured in guides" section. Named to match
 // getProductReviews in reviews/public-queries.ts.
-export async function getProductGuides(productId: string, limit = 6): Promise<PublicGuideSummary[]> {
-  const supabase = await createClient();
+export const getProductGuides = cachedPublic("guides:getProductGuides", [TAGS.guides], TTL.detail, async (productId: string, limit: number = 6): Promise<PublicGuideSummary[]> => {
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("guide_related_products")
     .select(`guides!inner(${GUIDE_LIST_SELECT})`)
@@ -202,11 +204,11 @@ export async function getProductGuides(productId: string, limit = 6): Promise<Pu
   if (error) throw new Error(`Failed to load guides for product: ${error.message}`);
   type Row = { guides: GuideRow | null };
   return ((data ?? []) as unknown as Row[]).map((r) => r.guides).filter((g): g is GuideRow => g !== null).map(summaryFromRow);
-}
+});
 
 // Category page's "Guides in this category" section.
-export async function getGuidesByCategory(categoryId: string, limit = 8): Promise<PublicGuideSummary[]> {
-  const supabase = await createClient();
+export const getGuidesByCategory = cachedPublic("guides:getGuidesByCategory", [TAGS.guides, TAGS.categories], TTL.feed, async (categoryId: string, limit: number = 8): Promise<PublicGuideSummary[]> => {
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("guides")
     .select(GUIDE_LIST_SELECT)
@@ -216,14 +218,14 @@ export async function getGuidesByCategory(categoryId: string, limit = 8): Promis
     .limit(limit);
   if (error) throw new Error(`Failed to load guides for category: ${error.message}`);
   return ((data ?? []) as unknown as GuideRow[]).map(summaryFromRow);
-}
+});
 
 // Homepage's "Latest guides" section — mirrors getLatestPublicProducts in
 // products/public-queries.ts exactly (a small LIMIT query, not a full
 // paginated page like listPublicGuides, which would over-fetch for a
 // 4-item strip).
-export async function getLatestPublicGuides(limit = 4): Promise<PublicGuideSummary[]> {
-  const supabase = await createClient();
+export const getLatestPublicGuides = cachedPublic("guides:getLatestPublicGuides", [TAGS.guides], TTL.feed, async (limit: number = 4): Promise<PublicGuideSummary[]> => {
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("guides")
     .select(GUIDE_LIST_SELECT)
@@ -232,13 +234,13 @@ export async function getLatestPublicGuides(limit = 4): Promise<PublicGuideSumma
     .limit(limit);
   if (error) throw new Error(`Failed to load latest guides: ${error.message}`);
   return ((data ?? []) as unknown as GuideRow[]).map(summaryFromRow);
-}
+});
 
 // Site-wide search's "Guides" section.
 export async function searchPublicGuides(rawQuery: unknown, limit = SEARCH_RESULT_LIMIT): Promise<PublicGuideSummary[]> {
   const query = sanitizePublicSearch(rawQuery);
   if (!query) return [];
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("guides")
     .select(GUIDE_LIST_SELECT)

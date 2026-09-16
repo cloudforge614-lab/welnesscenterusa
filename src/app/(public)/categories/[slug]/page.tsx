@@ -16,6 +16,13 @@ import {
 import { getGuidesByCategory } from "@/lib/guides/public-queries";
 import { getArticlesByCategory } from "@/lib/articles/public-queries";
 
+// Publicly cacheable. Editorial actions invalidate this immediately through
+// the cache tags declared on the queries below, so this TTL is only a
+// backstop for change made outside the application (a direct database edit,
+// or an invalidation that did not reach this instance). 300s = the
+// aggregate policy in src/lib/cache/public-cache.ts.
+export const revalidate = 300;
+
 function parsePage(value: string | string[] | undefined): number {
   const n = Number.parseInt(Array.isArray(value) ? value[0] : (value ?? "1"), 10);
   return Number.isFinite(n) && n > 0 ? n : 1;

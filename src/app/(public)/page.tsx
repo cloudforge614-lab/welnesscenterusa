@@ -10,6 +10,13 @@ import { getLatestPublicReviews } from "@/lib/reviews/public-queries";
 import { getLatestPublicGuides } from "@/lib/guides/public-queries";
 import { getLatestPublicArticles } from "@/lib/articles/public-queries";
 
+// Publicly cacheable. Editorial actions invalidate this immediately through
+// the cache tags declared on the queries below, so this TTL is only a
+// backstop for change made outside the application (a direct database edit,
+// or an invalidation that did not reach this instance). 300s = the
+// aggregate policy in src/lib/cache/public-cache.ts.
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "Health & Wellness Product Discovery",
   description:

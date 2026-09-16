@@ -1,7 +1,9 @@
 import "server-only";
 
 import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
+import { cachedPublic, TTL } from "@/lib/cache/public-cache";
+import { TAGS } from "@/lib/cache/tags";
 import { getSeoMetadata, sanitizePublicSearch, type PublicSeoMetadata } from "@/lib/products/public-queries";
 import { markdownExcerpt } from "@/lib/content/markdown";
 import { SEARCH_RESULT_LIMIT } from "@/lib/search/types";
@@ -37,8 +39,8 @@ type ComparisonRow = {
 
 export type PublicComparisonList = { items: PublicComparisonSummary[]; totalCount: number; pageCount: number };
 
-export async function listPublicComparisons(page: number): Promise<PublicComparisonList> {
-  const supabase = await createClient();
+export const listPublicComparisons = cachedPublic("comparisons:listPublicComparisons", [TAGS.comparisons, TAGS.products], TTL.feed, async (page: number): Promise<PublicComparisonList> => {
+  const supabase = createPublicClient();
   const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
   const from = (safePage - 1) * COMPARISONS_PAGE_SIZE;
 
@@ -91,7 +93,7 @@ export async function listPublicComparisons(page: number): Promise<PublicCompari
     totalCount,
     pageCount: Math.max(1, Math.ceil(totalCount / COMPARISONS_PAGE_SIZE)),
   };
-}
+});
 
 export type PublicComparisonDetail = {
   id: string;
@@ -117,9 +119,9 @@ type RelatedRow = {
   } | null;
 };
 
-export const getPublicComparison = cache(async (slug: string): Promise<PublicComparisonDetail | null> => {
+export const getPublicComparison = cache(cachedPublic("comparisons:getPublicComparison", [TAGS.comparisons, TAGS.products], TTL.detail, async (slug: string): Promise<PublicComparisonDetail | null> => {
   if (!slug) return null;
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const { data, error } = await supabase
     .from("comparisons")
@@ -163,10 +165,10 @@ export const getPublicComparison = cache(async (slug: string): Promise<PublicCom
     updatedAt: row.updated_at,
     products,
   };
-});
+}));
 
-export async function getAllPublicComparisonSlugs(): Promise<{ slug: string; updatedAt: string }[]> {
-  const supabase = await createClient();
+export const getAllPublicComparisonSlugs = cachedPublic("comparisons:getAllPublicComparisonSlugs", [TAGS.comparisons], TTL.sitemap, async (): Promise<{ slug: string; updatedAt: string }[]> => {
+  const supabase = createPublicClient();
   const batchSize = 1000;
   const slugs: { slug: string; updatedAt: string }[] = [];
 
@@ -184,7 +186,7 @@ export async function getAllPublicComparisonSlugs(): Promise<{ slug: string; upd
   }
 
   return slugs;
-}
+});
 
 export function getComparisonSeoMetadata(comparisonId: string): Promise<PublicSeoMetadata | null> {
   return getSeoMetadata("comparison", comparisonId);
@@ -200,7 +202,7 @@ export type SearchableComparison = Omit<PublicComparisonSummary, "productCount">
 export async function searchPublicComparisons(rawQuery: unknown, limit = SEARCH_RESULT_LIMIT): Promise<SearchableComparison[]> {
   const query = sanitizePublicSearch(rawQuery);
   if (!query) return [];
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("comparisons")
     .select("id, title, slug, content, published_at")

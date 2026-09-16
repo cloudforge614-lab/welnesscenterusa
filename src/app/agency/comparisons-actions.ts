@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublic, TAGS } from "@/lib/cache/tags";
 import { assertAgency, assertSeoWriter, NotAgencyError } from "@/lib/auth/agency";
 import { isUuid } from "@/lib/products/queries";
 import { searchProductsForPicker } from "@/lib/reviews/agency-queries";
@@ -28,6 +29,8 @@ function clip(raw: unknown, max: number): string | null {
 }
 
 function refresh(comparisonId?: string) {
+  // Public cache: Includes comparison_products ordering and membership.
+  revalidatePublic(TAGS.comparisons, TAGS.seo);
   revalidatePath("/agency/comparisons");
   if (comparisonId) revalidatePath(`/agency/comparisons/${comparisonId}`);
 }

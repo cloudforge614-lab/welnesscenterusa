@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublic, TAGS } from "@/lib/cache/tags";
 import { assertAgency, assertSeoWriter, NotAgencyError } from "@/lib/auth/agency";
 import { isUuid } from "@/lib/products/queries";
 import { searchProductsForPicker } from "@/lib/reviews/agency-queries";
@@ -29,6 +30,8 @@ function clip(raw: unknown, max: number): string | null {
 }
 
 function refresh(articleId?: string) {
+  // Public cache: Includes related-product links and the featured image.
+  revalidatePublic(TAGS.articles, TAGS.seo);
   revalidatePath("/agency/articles");
   if (articleId) revalidatePath(`/agency/articles/${articleId}`);
 }

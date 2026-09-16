@@ -5,6 +5,11 @@ import { Sidebar, type SidebarNavItem } from "@/components/admin/sidebar";
 import { BrandMark, buttonStyles } from "@/components/admin/ui";
 import { requireAgencyPage } from "@/lib/auth/agency";
 
+// Never cached, and never prerendered. Authentication already forces this
+// (the session is read from cookies), but stating it explicitly means a
+// future refactor cannot quietly make an authenticated dashboard cacheable.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: { default: "Agency workspace", template: "%s · Agency" },
   robots: { index: false, follow: false },

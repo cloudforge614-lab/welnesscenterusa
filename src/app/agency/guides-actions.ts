@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublic, TAGS } from "@/lib/cache/tags";
 import { assertAgency, assertSeoWriter, NotAgencyError } from "@/lib/auth/agency";
 import { isUuid } from "@/lib/products/queries";
 import { searchProductsForPicker } from "@/lib/reviews/agency-queries";
@@ -29,6 +30,9 @@ function clip(raw: unknown, max: number): string | null {
 }
 
 function refresh(guideId?: string) {
+  // Public cache: Includes related-product links and the featured image, both of which
+  // only ever change guide output.
+  revalidatePublic(TAGS.guides, TAGS.seo);
   revalidatePath("/agency/guides");
   if (guideId) revalidatePath(`/agency/guides/${guideId}`);
 }

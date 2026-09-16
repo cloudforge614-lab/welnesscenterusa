@@ -6,6 +6,13 @@ import { getAllPublicGuideSlugs } from "@/lib/guides/public-queries";
 import { getAllPublicArticleSlugs } from "@/lib/articles/public-queries";
 import { getAllPublicComparisonSlugs } from "@/lib/comparisons/public-queries";
 
+// Publicly cacheable. Editorial actions invalidate this immediately through
+// the cache tags declared on the queries below, so this TTL is only a
+// backstop for change made outside the application (a direct database edit,
+// or an invalidation that did not reach this instance). 300s = the
+// single-entity policy in src/lib/cache/public-cache.ts.
+export const revalidate = 300;
+
 // Static, always-indexable public pages. /search is deliberately excluded —
 // its own metadata sets robots noindex, since query-driven results pages
 // aren't meant to be indexed. /go/*, /admin/*, and ineligible product/

@@ -11,6 +11,12 @@ import { searchPublicArticles } from "@/lib/articles/public-queries";
 import { searchPublicComparisons } from "@/lib/comparisons/public-queries";
 import { SEARCH_RESULT_LIMIT, SEARCH_TYPE_LABEL, type SearchResult, type SearchResultType } from "@/lib/search/types";
 
+// Never cached. The whole page is a function of a visitor-supplied query
+// string, so caching page output risks one visitor's search being served to
+// another. The per-type search queries it calls are deliberately left
+// uncached too.
+export const dynamic = "force-dynamic";
+
 function firstString(value: string | string[] | undefined): string {
   return Array.isArray(value) ? (value[0] ?? "") : (value ?? "");
 }

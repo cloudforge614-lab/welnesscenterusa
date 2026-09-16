@@ -1,7 +1,9 @@
 import "server-only";
 
 import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
+import { cachedPublic, TTL } from "@/lib/cache/public-cache";
+import { TAGS } from "@/lib/cache/tags";
 import { getSeoMetadata, sanitizePublicSearch, type PublicSeoMetadata } from "@/lib/products/public-queries";
 import { markdownExcerpt } from "@/lib/content/markdown";
 import { SEARCH_RESULT_LIMIT } from "@/lib/search/types";
@@ -44,7 +46,7 @@ const REVIEW_LIST_SELECT = `
   products!inner(name, slug, status, deleted_at, product_content!inner(status))
 `;
 
-function eligibleQuery(supabase: Awaited<ReturnType<typeof createClient>>, select: string, head: boolean) {
+function eligibleQuery(supabase: ReturnType<typeof createPublicClient>, select: string, head: boolean) {
   return supabase
     .from("reviews")
     .select(select, { count: "exact", head })
@@ -68,8 +70,8 @@ function summaryFromRow(row: ReviewRow): PublicReviewSummary | null {
 
 export type PublicReviewList = { items: PublicReviewSummary[]; totalCount: number; pageCount: number };
 
-export async function listPublicReviews(page: number): Promise<PublicReviewList> {
-  const supabase = await createClient();
+export const listPublicReviews = cachedPublic("reviews:listPublicReviews", [TAGS.reviews, TAGS.products], TTL.feed, async (page: number): Promise<PublicReviewList> => {
+  const supabase = createPublicClient();
   const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
   const from = (safePage - 1) * REVIEWS_PAGE_SIZE;
 
@@ -94,7 +96,7 @@ export async function listPublicReviews(page: number): Promise<PublicReviewList>
     totalCount,
     pageCount: Math.max(1, Math.ceil(totalCount / REVIEWS_PAGE_SIZE)),
   };
-}
+});
 
 export type PublicReviewDetail = {
   id: string;
@@ -120,9 +122,9 @@ function stringArray(value: unknown): string[] {
   return value.filter((v): v is string => typeof v === "string" && v.trim().length > 0);
 }
 
-export const getPublicReview = cache(async (slug: string): Promise<PublicReviewDetail | null> => {
+export const getPublicReview = cache(cachedPublic("reviews:getPublicReview", [TAGS.reviews, TAGS.products], TTL.detail, async (slug: string): Promise<PublicReviewDetail | null> => {
   if (!slug) return null;
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const { data, error } = await eligibleQuery(
     supabase,
@@ -148,11 +150,11 @@ export const getPublicReview = cache(async (slug: string): Promise<PublicReviewD
     updatedAt: row.updated_at,
     product: { id: row.products.id, name: row.products.name, slug: row.products.slug },
   };
-});
+}));
 
 // For the sitemap.
-export async function getAllPublicReviewSlugs(): Promise<{ slug: string; updatedAt: string }[]> {
-  const supabase = await createClient();
+export const getAllPublicReviewSlugs = cachedPublic("reviews:getAllPublicReviewSlugs", [TAGS.reviews, TAGS.products], TTL.sitemap, async (): Promise<{ slug: string; updatedAt: string }[]> => {
+  const supabase = createPublicClient();
   const batchSize = 1000;
   const slugs: { slug: string; updatedAt: string }[] = [];
 
@@ -169,14 +171,14 @@ export async function getAllPublicReviewSlugs(): Promise<{ slug: string; updated
   }
 
   return slugs;
-}
+});
 
 // Reviews of one product, for the product page's "related reviews" section.
 // Deliberately does not re-check the product's own eligibility — the caller
 // (the product page) only ever calls this after it has already confirmed
 // the product itself is eligible.
-export async function getProductReviews(productId: string, limit = 6): Promise<PublicReviewSummary[]> {
-  const supabase = await createClient();
+export const getProductReviews = cachedPublic("reviews:getProductReviews", [TAGS.reviews, TAGS.products], TTL.detail, async (productId: string, limit: number = 6): Promise<PublicReviewSummary[]> => {
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("reviews")
     .select("id, title, slug, content, published_at, products!inner(name, slug, status, deleted_at, product_content!inner(status))")
@@ -186,7 +188,7 @@ export async function getProductReviews(productId: string, limit = 6): Promise<P
     .limit(limit);
   if (error) throw new Error(`Failed to load product reviews: ${error.message}`);
   return ((data ?? []) as unknown as ReviewRow[]).map(summaryFromRow).filter((r): r is PublicReviewSummary => r !== null);
-}
+});
 
 export function getReviewSeoMetadata(reviewId: string): Promise<PublicSeoMetadata | null> {
   return getSeoMetadata("review", reviewId);
@@ -196,12 +198,12 @@ export function getReviewSeoMetadata(reviewId: string): Promise<PublicSeoMetadat
 // products/public-queries.ts. Reuses eligibleQuery (not a bare status
 // filter) since a review, unlike a guide/article, is only genuinely
 // showable while its one product is also still fully eligible.
-export async function getLatestPublicReviews(limit = 4): Promise<PublicReviewSummary[]> {
-  const supabase = await createClient();
+export const getLatestPublicReviews = cachedPublic("reviews:getLatestPublicReviews", [TAGS.reviews, TAGS.products], TTL.feed, async (limit: number = 4): Promise<PublicReviewSummary[]> => {
+  const supabase = createPublicClient();
   const { data, error } = await eligibleQuery(supabase, REVIEW_LIST_SELECT, false).order("published_at", { ascending: false }).limit(limit);
   if (error) throw new Error(`Failed to load latest reviews: ${error.message}`);
   return ((data ?? []) as unknown as ReviewRow[]).map(summaryFromRow).filter((r): r is PublicReviewSummary => r !== null);
-}
+});
 
 // Site-wide search's "Reviews" section. Reuses eligibleQuery — a review is
 // only genuinely showable while its one product is also still fully
@@ -209,7 +211,7 @@ export async function getLatestPublicReviews(limit = 4): Promise<PublicReviewSum
 export async function searchPublicReviews(rawQuery: unknown, limit = SEARCH_RESULT_LIMIT): Promise<PublicReviewSummary[]> {
   const query = sanitizePublicSearch(rawQuery);
   if (!query) return [];
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await eligibleQuery(supabase, REVIEW_LIST_SELECT, false)
     .or(`title.ilike.%${query}%,slug.ilike.%${query}%`)
     .order("published_at", { ascending: false })

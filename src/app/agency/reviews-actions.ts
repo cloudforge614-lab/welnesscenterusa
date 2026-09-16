@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublic, TAGS } from "@/lib/cache/tags";
 import { assertAgency, assertSeoWriter, NotAgencyError } from "@/lib/auth/agency";
 import { isUuid } from "@/lib/products/queries";
 import { searchProductsForPicker } from "@/lib/reviews/agency-queries";
@@ -36,6 +37,9 @@ function stringList(raw: unknown, maxItems: number, maxLen: number): string[] {
 }
 
 function refresh(reviewId?: string) {
+  // Public cache: A review's own status gates it; its parent product's eligibility is
+  // re-checked at read time, so no product tag is needed here.
+  revalidatePublic(TAGS.reviews, TAGS.seo);
   revalidatePath("/agency/reviews");
   if (reviewId) revalidatePath(`/agency/reviews/${reviewId}`);
 }

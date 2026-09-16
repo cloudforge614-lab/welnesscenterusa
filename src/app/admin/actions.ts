@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublic, TAGS } from "@/lib/cache/tags";
 import { redirect } from "next/navigation";
 import { assertOwner, NotOwnerError } from "@/lib/auth/owner";
 import { isUuid } from "@/lib/products/queries";
@@ -44,6 +45,9 @@ async function withOwner<T>(run: () => Promise<ActionResult<T>>): Promise<Action
 }
 
 function refreshAdmin() {
+  // Public cache: The owner controls product status, soft delete, name/slug and the
+  // affiliate link — all of which change public eligibility or output.
+  revalidatePublic(TAGS.products, TAGS.categories);
   revalidatePath("/admin", "layout");
 }
 

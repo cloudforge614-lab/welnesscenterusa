@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublic, TAGS } from "@/lib/cache/tags";
 import { redirect } from "next/navigation";
 import { assertAgency, assertSeoWriter, NotAgencyError } from "@/lib/auth/agency";
 import { isUuid } from "@/lib/products/queries";
@@ -29,6 +30,9 @@ function clip(raw: unknown, max: number): string | null {
 }
 
 function refresh(productId: string) {
+  // Public cache: The product editor changes product_content (which gates whether the
+  // product is publicly visible at all), images, and category assignments.
+  revalidatePublic(TAGS.products, TAGS.categories, TAGS.seo);
   revalidatePath("/agency");
   revalidatePath("/agency/products");
   revalidatePath(`/agency/products/${productId}`);

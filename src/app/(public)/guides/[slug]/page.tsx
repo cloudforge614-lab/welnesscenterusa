@@ -9,6 +9,13 @@ import { safeJsonLd } from "@/lib/content/json-ld";
 import { renderMarkdown } from "@/lib/content/markdown";
 import { getGuideSeoMetadata, getPublicGuide, type PublicGuideDetail } from "@/lib/guides/public-queries";
 
+// Publicly cacheable. Editorial actions invalidate this immediately through
+// the cache tags declared on the queries below, so this TTL is only a
+// backstop for change made outside the application (a direct database edit,
+// or an invalidation that did not reach this instance). 300s = the
+// single-entity policy in src/lib/cache/public-cache.ts.
+export const revalidate = 300;
+
 export async function generateMetadata(props: PageProps<"/guides/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
   const guide = await getPublicGuide(slug);

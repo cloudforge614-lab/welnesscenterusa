@@ -1,7 +1,9 @@
 import "server-only";
 
 import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
+import { cachedPublic, TTL } from "@/lib/cache/public-cache";
+import { TAGS } from "@/lib/cache/tags";
 import { getSeoMetadata, sanitizePublicSearch, type PublicSeoMetadata } from "@/lib/products/public-queries";
 import { markdownExcerpt } from "@/lib/content/markdown";
 import { SEARCH_RESULT_LIMIT } from "@/lib/search/types";
@@ -52,8 +54,8 @@ function summaryFromRow(row: ArticleRow): PublicArticleSummary {
 
 export type PublicArticleList = { items: PublicArticleSummary[]; totalCount: number; pageCount: number };
 
-export async function listPublicArticles(page: number): Promise<PublicArticleList> {
-  const supabase = await createClient();
+export const listPublicArticles = cachedPublic("articles:listPublicArticles", [TAGS.articles], TTL.feed, async (page: number): Promise<PublicArticleList> => {
+  const supabase = createPublicClient();
   const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
   const from = (safePage - 1) * ARTICLES_PAGE_SIZE;
 
@@ -77,7 +79,7 @@ export async function listPublicArticles(page: number): Promise<PublicArticleLis
   const rows = (result.data ?? []) as unknown as ArticleRow[];
   const totalCount = result.count ?? 0;
   return { items: rows.map(summaryFromRow), totalCount, pageCount: Math.max(1, Math.ceil(totalCount / ARTICLES_PAGE_SIZE)) };
-}
+});
 
 export type PublicArticleDetail = {
   id: string;
@@ -104,9 +106,9 @@ type RelatedRow = {
   } | null;
 };
 
-export const getPublicArticle = cache(async (slug: string): Promise<PublicArticleDetail | null> => {
+export const getPublicArticle = cache(cachedPublic("articles:getPublicArticle", [TAGS.articles, TAGS.products, TAGS.categories], TTL.detail, async (slug: string): Promise<PublicArticleDetail | null> => {
   if (!slug) return null;
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const { data, error } = await supabase
     .from("articles")
@@ -152,10 +154,10 @@ export const getPublicArticle = cache(async (slug: string): Promise<PublicArticl
     category: row.categories,
     relatedProducts,
   };
-});
+}));
 
-export async function getAllPublicArticleSlugs(): Promise<{ slug: string; updatedAt: string }[]> {
-  const supabase = await createClient();
+export const getAllPublicArticleSlugs = cachedPublic("articles:getAllPublicArticleSlugs", [TAGS.articles], TTL.sitemap, async (): Promise<{ slug: string; updatedAt: string }[]> => {
+  const supabase = createPublicClient();
   const batchSize = 1000;
   const slugs: { slug: string; updatedAt: string }[] = [];
 
@@ -173,7 +175,7 @@ export async function getAllPublicArticleSlugs(): Promise<{ slug: string; update
   }
 
   return slugs;
-}
+});
 
 export function getArticleSeoMetadata(articleId: string): Promise<PublicSeoMetadata | null> {
   return getSeoMetadata("article", articleId);
@@ -184,8 +186,8 @@ export function getArticleSeoMetadata(articleId: string): Promise<PublicSeoMetad
 
 // Product page's "Mentioned in articles" section. Named to match
 // getProductReviews in reviews/public-queries.ts.
-export async function getProductArticles(productId: string, limit = 6): Promise<PublicArticleSummary[]> {
-  const supabase = await createClient();
+export const getProductArticles = cachedPublic("articles:getProductArticles", [TAGS.articles], TTL.detail, async (productId: string, limit: number = 6): Promise<PublicArticleSummary[]> => {
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("article_related_products")
     .select(`articles!inner(${ARTICLE_LIST_SELECT})`)
@@ -196,11 +198,11 @@ export async function getProductArticles(productId: string, limit = 6): Promise<
   if (error) throw new Error(`Failed to load articles for product: ${error.message}`);
   type Row = { articles: ArticleRow | null };
   return ((data ?? []) as unknown as Row[]).map((r) => r.articles).filter((a): a is ArticleRow => a !== null).map(summaryFromRow);
-}
+});
 
 // Category page's "Articles in this category" section.
-export async function getArticlesByCategory(categoryId: string, limit = 8): Promise<PublicArticleSummary[]> {
-  const supabase = await createClient();
+export const getArticlesByCategory = cachedPublic("articles:getArticlesByCategory", [TAGS.articles, TAGS.categories], TTL.feed, async (categoryId: string, limit: number = 8): Promise<PublicArticleSummary[]> => {
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("articles")
     .select(ARTICLE_LIST_SELECT)
@@ -210,11 +212,11 @@ export async function getArticlesByCategory(categoryId: string, limit = 8): Prom
     .limit(limit);
   if (error) throw new Error(`Failed to load articles for category: ${error.message}`);
   return ((data ?? []) as unknown as ArticleRow[]).map(summaryFromRow);
-}
+});
 
 // Homepage's "Latest from the blog" section — mirrors getLatestPublicProducts.
-export async function getLatestPublicArticles(limit = 4): Promise<PublicArticleSummary[]> {
-  const supabase = await createClient();
+export const getLatestPublicArticles = cachedPublic("articles:getLatestPublicArticles", [TAGS.articles], TTL.feed, async (limit: number = 4): Promise<PublicArticleSummary[]> => {
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("articles")
     .select(ARTICLE_LIST_SELECT)
@@ -223,13 +225,13 @@ export async function getLatestPublicArticles(limit = 4): Promise<PublicArticleS
     .limit(limit);
   if (error) throw new Error(`Failed to load latest articles: ${error.message}`);
   return ((data ?? []) as unknown as ArticleRow[]).map(summaryFromRow);
-}
+});
 
 // Site-wide search's "Articles" section.
 export async function searchPublicArticles(rawQuery: unknown, limit = SEARCH_RESULT_LIMIT): Promise<PublicArticleSummary[]> {
   const query = sanitizePublicSearch(rawQuery);
   if (!query) return [];
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("articles")
     .select(ARTICLE_LIST_SELECT)
