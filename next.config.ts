@@ -20,6 +20,24 @@ import type { NextConfig } from "next";
 // nothing, and survive whatever rendering strategy 7.5 settles on.
 const isDev = process.env.NODE_ENV === "development";
 
+// Analytics origins are added to the CSP only when a measurement ID is
+// actually configured. With analytics unset — local development, CI, any
+// deployment that has not opted in — the policy stays exactly as tight as
+// Step 7.2 left it, with no Google origins allowed at all.
+//
+// These are the specific hosts gtag uses, not a google.com wildcard:
+//   googletagmanager.com   serves gtag.js
+//   *.google-analytics.com receives the collect beacons, including the
+//                          regional endpoints (region1.google-analytics.com)
+//   *.analytics.google.com the newer collection domain
+// img-src already allows https: for product imagery, so GA's pixel fallback
+// needs no further grant.
+const analyticsConfigured = Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
+const GA_SCRIPT_SRC = analyticsConfigured ? " https://www.googletagmanager.com" : "";
+const GA_CONNECT_SRC = analyticsConfigured
+  ? " https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com"
+  : "";
+
 const csp = [
   // Nothing loads from anywhere but this origin unless a directive below
   // widens it. Also covers the directives deliberately not listed
@@ -54,7 +72,7 @@ const csp = [
   // /_next/static/chunks/* — there is no CDN and no third-party script.
   // 'unsafe-eval' is development-only: React uses eval there to rebuild
   // server error stacks in the browser. Production uses neither.
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline'${GA_SCRIPT_SRC}${isDev ? " 'unsafe-eval'" : ""}`,
 
   // 'unsafe-inline' is required: sonner (the toast library used by both the
   // Owner Admin and Agency CMS layouts) injects its stylesheet into the DOM
@@ -83,7 +101,7 @@ const csp = [
   // anywhere, and no client component imports supabase at all. Every query
   // runs server-side. So this only needs to cover Next.js's own same-origin
   // RSC navigation fetches. ws: is dev-only, for hot reload.
-  `connect-src 'self'${isDev ? " ws: wss:" : ""}`,
+  `connect-src 'self'${GA_CONNECT_SRC}${isDev ? " ws: wss:" : ""}`,
 
   // Production only: on localhost this would rewrite http://localhost fixture
   // image URLs to https and break them.

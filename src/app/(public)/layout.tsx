@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/public/site-nav";
+import { Analytics } from "@/components/public/analytics";
+import { analyticsEnabled, gaMeasurementId } from "@/lib/env";
 
 const FOOTER_LINKS = [
   { href: "/affiliate-disclosure", label: "Affiliate Disclosure" },
@@ -10,6 +12,12 @@ const FOOTER_LINKS = [
 export default function PublicLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Mounted here, in the public layout, rather than the root layout. That
+          is the whole of the staff-exclusion mechanism: /admin, /agency and
+          both login pages live outside this route group, so they never load
+          analytics at all — there is no runtime path check to get wrong. */}
+      {analyticsEnabled && gaMeasurementId && <Analytics measurementId={gaMeasurementId} />}
+
       <SiteHeader />
 
       <main className="flex-1">{children}</main>

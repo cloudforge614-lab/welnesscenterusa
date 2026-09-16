@@ -7,8 +7,10 @@ import { siteUrl } from "@/lib/env";
 // verified against the code rather than written from a template:
 //   • no cookies are set for public visitors (confirmed: zero Set-Cookie on
 //     public routes and on /go/[slug])
-//   • no analytics, tag manager, advertising pixel or third-party script is
-//     loaded anywhere
+//   • analytics (Step 7.6) is Google Analytics 4, loaded only when a
+//     measurement ID is configured, and run with client_storage:'none' so it
+//     writes no cookie, with advertising signals and personalisation off, and
+//     with page URLs reported path-only so search terms are never sent
 //   • no client-side storage is used (no localStorage/sessionStorage/
 //     document.cookie in src/)
 //   • affiliate_clicks stores exactly the columns listed below, and ip_hash
@@ -19,7 +21,7 @@ import { siteUrl } from "@/lib/env";
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
-    "How Wellness Center USA handles information: no visitor cookies, no analytics, and exactly what is recorded when an affiliate link is clicked.",
+    "How Wellness Center USA handles information: no visitor cookies, cookieless analytics that never sees your searches, and exactly what is recorded when an affiliate link is clicked.",
   alternates: { canonical: `${siteUrl}/privacy-policy` },
   robots: { index: true, follow: true },
 };
@@ -35,10 +37,11 @@ export default function PrivacyPolicyPage() {
     >
       <StaticSection title="The short version">
         <p>
-          You can browse this entire site without an account, and we do not set any cookies while you do. We do not
-          run analytics, advertising pixels, or third-party tracking scripts. The only visitor information we record
-          is a small amount of non-identifying data at the moment someone clicks through to a merchant, described in
-          full below.
+          You can browse this entire site without an account, and we do not set any cookies while you do. We use
+          Google Analytics to count visits, but we run it in a deliberately limited way: it stores no cookie, it
+          cannot recognise you between visits, and it is never told what you searched for. We use no advertising
+          pixels and no cross-site tracking. The only other visitor information we record is a small amount of
+          non-identifying data at the moment someone clicks through to a merchant, described in full below.
         </p>
       </StaticSection>
 
@@ -75,19 +78,52 @@ export default function PrivacyPolicyPage() {
         <p>To be specific about the things a site like this often does, but this one does not:</p>
         <ul>
           <li>we do not store your IP address in our records</li>
-          <li>we do not use analytics of any kind, including Google Analytics or a tag manager</li>
           <li>we do not use advertising pixels, retargeting, or cross-site tracking</li>
           <li>we do not build a profile of you or track you between visits</li>
+          <li>we do not send what you type into search to anyone</li>
           <li>we do not ask for a name, address, phone number, or payment details</li>
           <li>we do not take payments — no purchase is ever made on this site</li>
           <li>we do not sell, rent, or trade information about visitors</li>
         </ul>
       </StaticSection>
 
+      <StaticSection title="Analytics">
+        <p>
+          We use Google Analytics to understand how many people visit and which pages they read. Google acts as a
+          processor for us, and the data is held in Google&apos;s systems under their terms.
+        </p>
+        <p>We have configured it more narrowly than its defaults, specifically:</p>
+        <ul>
+          <li>
+            <strong>No cookie and no stored identifier.</strong> Analytics runs with browser storage switched off,
+            so nothing is written to your device and the same visitor cannot be recognised on a later visit. This
+            makes our visitor counts less accurate, which we accept.
+          </li>
+          <li>
+            <strong>No advertising features.</strong> Google Signals, ad personalisation and advertising data
+            sharing are all disabled, so this data is not used to target advertising to you anywhere.
+          </li>
+          <li>
+            <strong>No search terms.</strong> Page addresses are reported without their query string, so what you
+            type into our search box is never sent to Google. We record only that a search happened and whether it
+            returned any results.
+          </li>
+          <li>
+            <strong>No account or staff activity.</strong> Analytics loads only on the public pages. The private
+            administrative area is excluded entirely.
+          </li>
+        </ul>
+        <p>
+          Your IP address is used by Google to derive an approximate location and is not retained by us. We never
+          send Google your name, your email address, anything you type into a form, or the address of the merchant
+          you clicked through to.
+        </p>
+      </StaticSection>
+
       <StaticSection title="Cookies and similar technologies">
         <p>
-          Browsing the public site sets no cookies at all, and the site does not use browser storage such as
-          localStorage. There is no cookie banner because there is nothing to consent to.
+          Browsing the public site still sets no cookies at all, including for analytics, and the site does not use
+          browser storage such as localStorage. There is no cookie banner because there is nothing to consent to.
         </p>
         <p>
           A session cookie is used in one place only: when a member of the site owner&apos;s or editorial team signs
@@ -172,8 +208,9 @@ export default function PrivacyPolicyPage() {
 
       <StaticSection title="Changes to this policy">
         <p>
-          If this policy changes, the date at the top of the page changes with it. If we ever begin using analytics
-          or any other form of visitor tracking, this page will say so before or when that happens.
+          If this policy changes, the date at the top of the page changes with it. If we ever widen what analytics
+          collects — cookies, search terms, or anything that could identify you — this page will say so before or
+          when that happens, and we would look at whether consent should be asked for first.
         </p>
       </StaticSection>
 

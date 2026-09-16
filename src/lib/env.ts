@@ -18,6 +18,22 @@ export const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:30
 // NEXT_PUBLIC_CONTACT_EMAIL unset in every environment until one is real.
 export const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || null;
 
+// ── Analytics (Phase 7.6) ───────────────────────────────────────────────────
+// A GA4 measurement ID is public by design — it ships in the page and is not a
+// credential. It is still environment-configured so that no ID is baked into
+// the repository and so analytics is simply absent anywhere it is unset:
+// local development, CI, preview builds, and any deployment that has not
+// opted in. Absent means absent — no script, no requests, and no analytics
+// origins added to the Content-Security-Policy.
+export const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || null;
+export const analyticsEnabled = gaMeasurementId !== null;
+
+// The token from Search Console's "HTML tag" verification method. Public by
+// design (it is meant to be read off the page). Rendered into <head> only when
+// set; see the Search Console note in .env.example for what still has to
+// happen outside this repository.
+export const googleSiteVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || null;
+
 // ── Monitoring (Phase 7.4) ──────────────────────────────────────────────────
 // All three are optional: error capture works without any of them, and
 // nothing here is required for the app to boot.

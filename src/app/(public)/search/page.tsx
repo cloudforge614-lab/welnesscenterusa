@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Form from "next/form";
 import { Suspense } from "react";
 import { SearchResultCard } from "@/components/public/search-result-card";
+import { SearchAnalytics } from "@/components/public/analytics";
 import { EmptyState, Skeleton } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
 import { searchPublicProducts } from "@/lib/products/public-queries";
@@ -186,15 +187,21 @@ async function SearchResults({ query }: { query: string }) {
 
   if (totalCount === 0) {
     return (
-      <EmptyState
-        title={`No results for “${query}”`}
-        description="Try a different spelling, or a more general term."
-      />
+      <>
+        <SearchAnalytics hasResults={false} />
+        <EmptyState
+          title={`No results for “${query}”`}
+          description="Try a different spelling, or a more general term."
+        />
+      </>
     );
   }
 
   return (
     <div className="space-y-12">
+      {/* Records that a search happened and whether it found anything. The
+          query itself is never sent — see src/components/public/analytics.tsx. */}
+      <SearchAnalytics hasResults />
       <p className="text-sm text-ink-muted">
         {totalCount} result{totalCount === 1 ? "" : "s"} for &ldquo;{query}&rdquo;
       </p>
