@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { siteUrl } from "@/lib/env";
 import { getAllPublicCategorySlugs, getAllPublicSlugs } from "@/lib/products/public-queries";
+import { getAllPublicReviewSlugs } from "@/lib/reviews/public-queries";
 
 // Static, always-indexable public pages. /search is deliberately excluded —
 // its own metadata sets robots noindex, since query-driven results pages
@@ -11,6 +12,7 @@ import { getAllPublicCategorySlugs, getAllPublicSlugs } from "@/lib/products/pub
 const STATIC_ROUTES: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"] }[] = [
   { path: "/", priority: 1.0, changeFrequency: "daily" },
   { path: "/products", priority: 0.9, changeFrequency: "daily" },
+  { path: "/reviews", priority: 0.7, changeFrequency: "daily" },
   { path: "/categories", priority: 0.6, changeFrequency: "weekly" },
   { path: "/about", priority: 0.3, changeFrequency: "monthly" },
   { path: "/contact", priority: 0.3, changeFrequency: "monthly" },
@@ -20,7 +22,11 @@ const STATIC_ROUTES: { path: string; priority: number; changeFrequency: Metadata
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [productSlugs, categorySlugs] = await Promise.all([getAllPublicSlugs(), getAllPublicCategorySlugs()]);
+  const [productSlugs, categorySlugs, reviewSlugs] = await Promise.all([
+    getAllPublicSlugs(),
+    getAllPublicCategorySlugs(),
+    getAllPublicReviewSlugs(),
+  ]);
 
   return [
     ...STATIC_ROUTES.map(({ path, priority, changeFrequency }) => ({
@@ -38,6 +44,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: updatedAt,
       changeFrequency: "weekly" as const,
       priority: 0.7,
+    })),
+    ...reviewSlugs.map(({ slug, updatedAt }) => ({
+      url: `${siteUrl}/reviews/${slug}`,
+      lastModified: updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
     })),
   ];
 }

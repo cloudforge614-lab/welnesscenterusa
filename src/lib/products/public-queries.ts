@@ -343,7 +343,14 @@ export type PublicSeoMetadata = {
   robotsFollow: boolean;
 };
 
-async function getSeoMetadata(entityType: "product" | "category", entityId: string): Promise<PublicSeoMetadata | null> {
+// Widened beyond "product" | "category" so the new content-type query
+// modules (reviews/comparisons/articles/guides) can reuse this instead of
+// duplicating the same five-column select — seo_metadata is already a
+// polymorphic table keyed on (entity_type, entity_id) for exactly this.
+export async function getSeoMetadata(
+  entityType: "product" | "category" | "review" | "comparison" | "article" | "guide",
+  entityId: string,
+): Promise<PublicSeoMetadata | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("seo_metadata")

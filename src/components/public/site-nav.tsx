@@ -8,6 +8,7 @@ import { cx } from "@/lib/format";
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/products", label: "Products" },
+  { href: "/reviews", label: "Reviews" },
   { href: "/categories", label: "Categories" },
   { href: "/search", label: "Search" },
   { href: "/about", label: "About" },

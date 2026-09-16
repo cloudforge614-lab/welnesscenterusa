@@ -5,6 +5,7 @@ import { AffiliateDisclosure } from "@/components/public/disclosure";
 import { ProductGrid } from "@/components/public/product-card";
 import { CategoryChip, PlaceholderImage } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
+import { safeJsonLd } from "@/lib/content/json-ld";
 import { getProductSeoMetadata, getPublicProduct, getRelatedProducts, type PublicProductDetail } from "@/lib/products/public-queries";
 
 export async function generateMetadata(props: PageProps<"/products/[slug]">): Promise<Metadata> {
@@ -61,7 +62,7 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
 
       <nav aria-label="Breadcrumb" className="text-sm text-ink-muted">
         <ol className="flex flex-wrap items-center gap-1.5">

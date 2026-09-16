@@ -8,6 +8,7 @@ export function Pagination({
   pageSize,
   basePath,
   query,
+  itemLabel = "products",
 }: {
   page: number;
   pageCount: number;
@@ -16,6 +17,8 @@ export function Pagination({
   basePath: string;
   /** Extra query params to preserve across page links, e.g. { q: "vitamin" }. */
   query?: Record<string, string>;
+  /** Plural noun for the count line, e.g. "reviews", "guides". Defaults to "products". */
+  itemLabel?: string;
 }) {
   if (totalCount === 0) return null;
 
@@ -29,9 +32,9 @@ export function Pagination({
   };
 
   return (
-    <nav aria-label="Product pages" className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+    <nav aria-label={`${itemLabel} pages`} className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
       <p className="text-sm text-ink-muted">
-        {formatNumber(firstRow)}–{formatNumber(lastRow)} of {formatNumber(totalCount)} products
+        {formatNumber(firstRow)}–{formatNumber(lastRow)} of {formatNumber(totalCount)} {itemLabel}
       </p>
       {pageCount > 1 && (
         <div className="flex gap-2">
