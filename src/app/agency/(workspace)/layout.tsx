@@ -41,6 +41,12 @@ const AGENCY_NAV: SidebarNavItem[] = [
     icon: "M4 6h16M4 12h16M4 18h10",
     match: "prefix",
   },
+  {
+    href: "/agency/comparisons",
+    label: "Comparisons",
+    icon: "M8 4v16M16 4v16M4 9h4M16 9h4M4 15h4M16 15h4",
+    match: "prefix",
+  },
 ];
 
 const ROLE_LABEL: Record<string, string> = {

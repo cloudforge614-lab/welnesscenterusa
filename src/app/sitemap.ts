@@ -4,6 +4,7 @@ import { getAllPublicCategorySlugs, getAllPublicSlugs } from "@/lib/products/pub
 import { getAllPublicReviewSlugs } from "@/lib/reviews/public-queries";
 import { getAllPublicGuideSlugs } from "@/lib/guides/public-queries";
 import { getAllPublicArticleSlugs } from "@/lib/articles/public-queries";
+import { getAllPublicComparisonSlugs } from "@/lib/comparisons/public-queries";
 
 // Static, always-indexable public pages. /search is deliberately excluded —
 // its own metadata sets robots noindex, since query-driven results pages
@@ -17,6 +18,7 @@ const STATIC_ROUTES: { path: string; priority: number; changeFrequency: Metadata
   { path: "/reviews", priority: 0.7, changeFrequency: "daily" },
   { path: "/guides", priority: 0.6, changeFrequency: "weekly" },
   { path: "/blog", priority: 0.6, changeFrequency: "daily" },
+  { path: "/comparisons", priority: 0.6, changeFrequency: "weekly" },
   { path: "/categories", priority: 0.6, changeFrequency: "weekly" },
   { path: "/about", priority: 0.3, changeFrequency: "monthly" },
   { path: "/contact", priority: 0.3, changeFrequency: "monthly" },
@@ -26,12 +28,13 @@ const STATIC_ROUTES: { path: string; priority: number; changeFrequency: Metadata
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [productSlugs, categorySlugs, reviewSlugs, guideSlugs, articleSlugs] = await Promise.all([
+  const [productSlugs, categorySlugs, reviewSlugs, guideSlugs, articleSlugs, comparisonSlugs] = await Promise.all([
     getAllPublicSlugs(),
     getAllPublicCategorySlugs(),
     getAllPublicReviewSlugs(),
     getAllPublicGuideSlugs(),
     getAllPublicArticleSlugs(),
+    getAllPublicComparisonSlugs(),
   ]);
 
   return [
@@ -65,6 +68,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
     ...articleSlugs.map(({ slug, updatedAt }) => ({
       url: `${siteUrl}/blog/${slug}`,
+      lastModified: updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
+    })),
+    ...comparisonSlugs.map(({ slug, updatedAt }) => ({
+      url: `${siteUrl}/comparisons/${slug}`,
       lastModified: updatedAt,
       changeFrequency: "weekly" as const,
       priority: 0.5,

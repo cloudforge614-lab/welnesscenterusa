@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/reviews", label: "Reviews" },
   { href: "/guides", label: "Guides" },
   { href: "/blog", label: "Blog" },
+  { href: "/comparisons", label: "Comparisons" },
   { href: "/categories", label: "Categories" },
   { href: "/search", label: "Search" },
   { href: "/about", label: "About" },
