@@ -5,6 +5,7 @@ import { Pagination } from "@/components/public/pagination";
 import { ProductGrid } from "@/components/public/product-card";
 import { EmptyState } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
+import { safeJsonLd } from "@/lib/content/json-ld";
 import {
   getCategoryProducts,
   getCategorySeoMetadata,
@@ -64,7 +65,7 @@ export default async function CategoryPage(props: PageProps<"/categories/[slug]"
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }} />
 
       <nav aria-label="Breadcrumb" className="text-sm text-ink-muted">
         <ol className="flex flex-wrap items-center gap-1.5">
