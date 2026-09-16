@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { reportClientError } from "@/lib/monitoring/report";
 
 // Root fallback for any public route that doesn't have its own error.tsx
 // (homepage, categories listing's own edge cases, etc). This is a plain
@@ -9,7 +10,7 @@ import { useEffect } from "react";
 // of the group.
 export default function PublicError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    console.error(error);
+    reportClientError(error, { boundary: "public" });
   }, [error]);
 
   return (

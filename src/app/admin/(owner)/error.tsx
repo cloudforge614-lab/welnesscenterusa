@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
+import { reportClientError } from "@/lib/monitoring/report";
 import { buttonStyles, Card } from "@/components/admin/ui";
 
 export default function AdminError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    console.error(error);
+    reportClientError(error, { boundary: "admin" });
   }, [error]);
 
   return (

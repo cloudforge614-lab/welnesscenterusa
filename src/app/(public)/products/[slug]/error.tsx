@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { reportClientError } from "@/lib/monitoring/report";
 
 export default function ProductError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    console.error(error);
+    reportClientError(error, { boundary: "product-detail" });
   }, [error]);
 
   return (
