@@ -190,3 +190,14 @@ export async function getProductReviews(productId: string, limit = 6): Promise<P
 export function getReviewSeoMetadata(reviewId: string): Promise<PublicSeoMetadata | null> {
   return getSeoMetadata("review", reviewId);
 }
+
+// Homepage's "Latest reviews" section — mirrors getLatestPublicProducts in
+// products/public-queries.ts. Reuses eligibleQuery (not a bare status
+// filter) since a review, unlike a guide/article, is only genuinely
+// showable while its one product is also still fully eligible.
+export async function getLatestPublicReviews(limit = 4): Promise<PublicReviewSummary[]> {
+  const supabase = await createClient();
+  const { data, error } = await eligibleQuery(supabase, REVIEW_LIST_SELECT, false).order("published_at", { ascending: false }).limit(limit);
+  if (error) throw new Error(`Failed to load latest reviews: ${error.message}`);
+  return ((data ?? []) as unknown as ReviewRow[]).map(summaryFromRow).filter((r): r is PublicReviewSummary => r !== null);
+}

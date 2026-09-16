@@ -181,3 +181,54 @@ export async function getAllPublicGuideSlugs(): Promise<{ slug: string; updatedA
 export function getGuideSeoMetadata(guideId: string): Promise<PublicSeoMetadata | null> {
   return getSeoMetadata("guide", guideId);
 }
+
+// ── Phase 6: reverse-direction lookups (product page, category page) ───────
+// Same shape/rule as the guide page's own related-products query, mirrored:
+// only published guides, via the same join table, single indexed-column
+// filter — no per-row follow-up query, so no N+1 regardless of caller.
+
+// Product page's "Featured in guides" section. Named to match
+// getProductReviews in reviews/public-queries.ts.
+export async function getProductGuides(productId: string, limit = 6): Promise<PublicGuideSummary[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("guide_related_products")
+    .select(`guides!inner(${GUIDE_LIST_SELECT})`)
+    .eq("product_id", productId)
+    .eq("guides.status", "published")
+    .order("published_at", { referencedTable: "guides", ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Failed to load guides for product: ${error.message}`);
+  type Row = { guides: GuideRow | null };
+  return ((data ?? []) as unknown as Row[]).map((r) => r.guides).filter((g): g is GuideRow => g !== null).map(summaryFromRow);
+}
+
+// Category page's "Guides in this category" section.
+export async function getGuidesByCategory(categoryId: string, limit = 8): Promise<PublicGuideSummary[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("guides")
+    .select(GUIDE_LIST_SELECT)
+    .eq("status", "published")
+    .eq("category_id", categoryId)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Failed to load guides for category: ${error.message}`);
+  return ((data ?? []) as unknown as GuideRow[]).map(summaryFromRow);
+}
+
+// Homepage's "Latest guides" section — mirrors getLatestPublicProducts in
+// products/public-queries.ts exactly (a small LIMIT query, not a full
+// paginated page like listPublicGuides, which would over-fetch for a
+// 4-item strip).
+export async function getLatestPublicGuides(limit = 4): Promise<PublicGuideSummary[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("guides")
+    .select(GUIDE_LIST_SELECT)
+    .eq("status", "published")
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Failed to load latest guides: ${error.message}`);
+  return ((data ?? []) as unknown as GuideRow[]).map(summaryFromRow);
+}

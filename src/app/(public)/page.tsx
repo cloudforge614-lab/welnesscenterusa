@@ -2,9 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ProductGrid } from "@/components/public/product-card";
+import { ContentLinkSection } from "@/components/public/content-link-section";
 import { CategoryChip, EmptyState, Skeleton } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
 import { getLatestPublicProducts, getPublicCategoriesWithProducts } from "@/lib/products/public-queries";
+import { getLatestPublicReviews } from "@/lib/reviews/public-queries";
+import { getLatestPublicGuides } from "@/lib/guides/public-queries";
+import { getLatestPublicArticles } from "@/lib/articles/public-queries";
 
 export const metadata: Metadata = {
   title: "Health & Wellness Product Discovery",
@@ -80,7 +84,13 @@ function Hero() {
 }
 
 async function DiscoverySections() {
-  const [latest, categories] = await Promise.all([getLatestPublicProducts(8), getPublicCategoriesWithProducts()]);
+  const [latest, categories, latestReviews, latestGuides, latestArticles] = await Promise.all([
+    getLatestPublicProducts(8),
+    getPublicCategoriesWithProducts(),
+    getLatestPublicReviews(4),
+    getLatestPublicGuides(4),
+    getLatestPublicArticles(4),
+  ]);
 
   if (latest.length === 0) {
     return (
@@ -145,6 +155,22 @@ async function DiscoverySections() {
             </ul>
           </div>
         </section>
+      )}
+
+      {latestReviews.length > 0 && (
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <ContentLinkSection id="latest-reviews-heading" title="Latest reviews" items={latestReviews} hrefFor={(r) => `/reviews/${r.slug}`} labelFor={(r) => r.title} viewAllHref="/reviews" />
+        </div>
+      )}
+      {latestGuides.length > 0 && (
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <ContentLinkSection id="latest-guides-heading" title="Latest guides" items={latestGuides} hrefFor={(g) => `/guides/${g.slug}`} labelFor={(g) => g.title} viewAllHref="/guides" />
+        </div>
+      )}
+      {latestArticles.length > 0 && (
+        <div className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+          <ContentLinkSection id="latest-articles-heading" title="Latest from the blog" items={latestArticles} hrefFor={(a) => `/blog/${a.slug}`} labelFor={(a) => a.title} viewAllHref="/blog" />
+        </div>
       )}
     </>
   );

@@ -177,3 +177,49 @@ export async function getAllPublicArticleSlugs(): Promise<{ slug: string; update
 export function getArticleSeoMetadata(articleId: string): Promise<PublicSeoMetadata | null> {
   return getSeoMetadata("article", articleId);
 }
+
+// ── Phase 6: reverse-direction lookups (product page, category page) ───────
+// Mirrors guides/public-queries.ts's equivalents exactly.
+
+// Product page's "Mentioned in articles" section. Named to match
+// getProductReviews in reviews/public-queries.ts.
+export async function getProductArticles(productId: string, limit = 6): Promise<PublicArticleSummary[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("article_related_products")
+    .select(`articles!inner(${ARTICLE_LIST_SELECT})`)
+    .eq("product_id", productId)
+    .eq("articles.status", "published")
+    .order("published_at", { referencedTable: "articles", ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Failed to load articles for product: ${error.message}`);
+  type Row = { articles: ArticleRow | null };
+  return ((data ?? []) as unknown as Row[]).map((r) => r.articles).filter((a): a is ArticleRow => a !== null).map(summaryFromRow);
+}
+
+// Category page's "Articles in this category" section.
+export async function getArticlesByCategory(categoryId: string, limit = 8): Promise<PublicArticleSummary[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("articles")
+    .select(ARTICLE_LIST_SELECT)
+    .eq("status", "published")
+    .eq("category_id", categoryId)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Failed to load articles for category: ${error.message}`);
+  return ((data ?? []) as unknown as ArticleRow[]).map(summaryFromRow);
+}
+
+// Homepage's "Latest from the blog" section — mirrors getLatestPublicProducts.
+export async function getLatestPublicArticles(limit = 4): Promise<PublicArticleSummary[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("articles")
+    .select(ARTICLE_LIST_SELECT)
+    .eq("status", "published")
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Failed to load latest articles: ${error.message}`);
+  return ((data ?? []) as unknown as ArticleRow[]).map(summaryFromRow);
+}

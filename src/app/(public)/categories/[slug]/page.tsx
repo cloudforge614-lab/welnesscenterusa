@@ -6,12 +6,15 @@ import { ProductGrid } from "@/components/public/product-card";
 import { EmptyState } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
 import { safeJsonLd } from "@/lib/content/json-ld";
+import { ContentLinkSection } from "@/components/public/content-link-section";
 import {
   getCategoryProducts,
   getCategorySeoMetadata,
   getPublicCategory,
   PUBLIC_PAGE_SIZE,
 } from "@/lib/products/public-queries";
+import { getGuidesByCategory } from "@/lib/guides/public-queries";
+import { getArticlesByCategory } from "@/lib/articles/public-queries";
 
 function parsePage(value: string | string[] | undefined): number {
   const n = Number.parseInt(Array.isArray(value) ? value[0] : (value ?? "1"), 10);
@@ -51,7 +54,13 @@ export default async function CategoryPage(props: PageProps<"/categories/[slug]"
   const category = await getPublicCategory(slug);
   if (!category) notFound();
 
-  const { items, totalCount, pageCount } = await getCategoryProducts(category.id, page);
+  // Parallel: pagination (products) and the two new sections all only need
+  // category.id, already known — no reason to fetch them one after another.
+  const [{ items, totalCount, pageCount }, categoryGuides, categoryArticles] = await Promise.all([
+    getCategoryProducts(category.id, page),
+    getGuidesByCategory(category.id),
+    getArticlesByCategory(category.id),
+  ]);
   const canonical = `${siteUrl}/categories/${category.slug}`;
 
   const breadcrumbLd = {
@@ -112,6 +121,13 @@ export default async function CategoryPage(props: PageProps<"/categories/[slug]"
         pageSize={PUBLIC_PAGE_SIZE}
         basePath={`/categories/${category.slug}`}
       />
+
+      {categoryGuides.length > 0 && (
+        <ContentLinkSection id="category-guides-heading" title="Guides in this category" items={categoryGuides} hrefFor={(g) => `/guides/${g.slug}`} labelFor={(g) => g.title} />
+      )}
+      {categoryArticles.length > 0 && (
+        <ContentLinkSection id="category-articles-heading" title="Articles in this category" items={categoryArticles} hrefFor={(a) => `/blog/${a.slug}`} labelFor={(a) => a.title} />
+      )}
     </div>
   );
 }

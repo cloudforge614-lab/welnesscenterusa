@@ -6,7 +6,11 @@ import { ProductGrid } from "@/components/public/product-card";
 import { CategoryChip, PlaceholderImage } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
 import { safeJsonLd } from "@/lib/content/json-ld";
+import { ContentLinkSection } from "@/components/public/content-link-section";
 import { getProductSeoMetadata, getPublicProduct, getRelatedProducts, type PublicProductDetail } from "@/lib/products/public-queries";
+import { getProductReviews } from "@/lib/reviews/public-queries";
+import { getProductGuides } from "@/lib/guides/public-queries";
+import { getProductArticles } from "@/lib/articles/public-queries";
 
 export async function generateMetadata(props: PageProps<"/products/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
@@ -51,10 +55,18 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
   const product = await getPublicProduct(slug);
   if (!product) notFound();
 
-  const related = await getRelatedProducts(
-    product.id,
-    product.categories.map((c) => c.id),
-  );
+  // Parallel, not sequential: none of these four depend on each other's
+  // result, only on product.id (already known) — fetching them one after
+  // another would just be four round-trips in a row for no reason.
+  const [related, productReviews, productGuides, productArticles] = await Promise.all([
+    getRelatedProducts(
+      product.id,
+      product.categories.map((c) => c.id),
+    ),
+    getProductReviews(product.id),
+    getProductGuides(product.id),
+    getProductArticles(product.id),
+  ]);
   const canonical = `${siteUrl}/products/${product.slug}`;
   const primaryImage = product.images[0] ?? null;
 
@@ -229,6 +241,16 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
             <ProductGrid products={related} />
           </div>
         </section>
+      )}
+
+      {productReviews.length > 0 && (
+        <ContentLinkSection id="reviews-heading" title="Reviews" items={productReviews} hrefFor={(r) => `/reviews/${r.slug}`} labelFor={(r) => r.title} />
+      )}
+      {productGuides.length > 0 && (
+        <ContentLinkSection id="guides-heading" title="Featured in guides" items={productGuides} hrefFor={(g) => `/guides/${g.slug}`} labelFor={(g) => g.title} />
+      )}
+      {productArticles.length > 0 && (
+        <ContentLinkSection id="articles-heading" title="Mentioned in articles" items={productArticles} hrefFor={(a) => `/blog/${a.slug}`} labelFor={(a) => a.title} />
       )}
     </div>
   );
