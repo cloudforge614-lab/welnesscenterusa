@@ -2,8 +2,9 @@ import "server-only";
 
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { getSeoMetadata, type PublicSeoMetadata } from "@/lib/products/public-queries";
+import { getSeoMetadata, sanitizePublicSearch, type PublicSeoMetadata } from "@/lib/products/public-queries";
 import { markdownExcerpt } from "@/lib/content/markdown";
+import { SEARCH_RESULT_LIMIT } from "@/lib/search/types";
 
 // Mirrors guides/articles/public-queries.ts. comparisons differs from those
 // two in shape: no category, no featured image, no single "parent" product —
@@ -187,4 +188,32 @@ export async function getAllPublicComparisonSlugs(): Promise<{ slug: string; upd
 
 export function getComparisonSeoMetadata(comparisonId: string): Promise<PublicSeoMetadata | null> {
   return getSeoMetadata("comparison", comparisonId);
+}
+
+// Site-wide search's "Comparisons" section. Deliberately does not compute
+// productCount (unlike listPublicComparisons) — that's a second query
+// (comparison_products joined against products) that the unified search
+// result card never displays, so running it here would be the exact
+// unnecessary-fetch this phase's performance requirement rules out.
+export type SearchableComparison = Omit<PublicComparisonSummary, "productCount">;
+
+export async function searchPublicComparisons(rawQuery: unknown, limit = SEARCH_RESULT_LIMIT): Promise<SearchableComparison[]> {
+  const query = sanitizePublicSearch(rawQuery);
+  if (!query) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("comparisons")
+    .select("id, title, slug, content, published_at")
+    .eq("status", "published")
+    .or(`title.ilike.%${query}%,slug.ilike.%${query}%`)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Failed to search comparisons: ${error.message}`);
+  return ((data ?? []) as unknown as ComparisonRow[]).map((row) => ({
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    excerpt: markdownExcerpt(row.content),
+    publishedAt: row.published_at,
+  }));
 }

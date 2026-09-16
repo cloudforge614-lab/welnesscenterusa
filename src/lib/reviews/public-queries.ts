@@ -2,8 +2,9 @@ import "server-only";
 
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { getSeoMetadata, type PublicSeoMetadata } from "@/lib/products/public-queries";
+import { getSeoMetadata, sanitizePublicSearch, type PublicSeoMetadata } from "@/lib/products/public-queries";
 import { markdownExcerpt } from "@/lib/content/markdown";
+import { SEARCH_RESULT_LIMIT } from "@/lib/search/types";
 
 // Mirrors products/public-queries.ts: a separate module from any agency/
 // owner-side query file, so a public page can never receive a field (draft
@@ -199,5 +200,20 @@ export async function getLatestPublicReviews(limit = 4): Promise<PublicReviewSum
   const supabase = await createClient();
   const { data, error } = await eligibleQuery(supabase, REVIEW_LIST_SELECT, false).order("published_at", { ascending: false }).limit(limit);
   if (error) throw new Error(`Failed to load latest reviews: ${error.message}`);
+  return ((data ?? []) as unknown as ReviewRow[]).map(summaryFromRow).filter((r): r is PublicReviewSummary => r !== null);
+}
+
+// Site-wide search's "Reviews" section. Reuses eligibleQuery — a review is
+// only genuinely showable while its one product is also still fully
+// eligible, same rule every other reviews query in this file applies.
+export async function searchPublicReviews(rawQuery: unknown, limit = SEARCH_RESULT_LIMIT): Promise<PublicReviewSummary[]> {
+  const query = sanitizePublicSearch(rawQuery);
+  if (!query) return [];
+  const supabase = await createClient();
+  const { data, error } = await eligibleQuery(supabase, REVIEW_LIST_SELECT, false)
+    .or(`title.ilike.%${query}%,slug.ilike.%${query}%`)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Failed to search reviews: ${error.message}`);
   return ((data ?? []) as unknown as ReviewRow[]).map(summaryFromRow).filter((r): r is PublicReviewSummary => r !== null);
 }

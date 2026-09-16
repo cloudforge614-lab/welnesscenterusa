@@ -2,8 +2,9 @@ import "server-only";
 
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { getSeoMetadata, type PublicSeoMetadata } from "@/lib/products/public-queries";
+import { getSeoMetadata, sanitizePublicSearch, type PublicSeoMetadata } from "@/lib/products/public-queries";
 import { markdownExcerpt } from "@/lib/content/markdown";
+import { SEARCH_RESULT_LIMIT } from "@/lib/search/types";
 
 // Mirrors reviews/public-queries.ts: a separate module from any agency/owner
 // query file, so a public page can never receive a draft/internal field
@@ -230,5 +231,21 @@ export async function getLatestPublicGuides(limit = 4): Promise<PublicGuideSumma
     .order("published_at", { ascending: false })
     .limit(limit);
   if (error) throw new Error(`Failed to load latest guides: ${error.message}`);
+  return ((data ?? []) as unknown as GuideRow[]).map(summaryFromRow);
+}
+
+// Site-wide search's "Guides" section.
+export async function searchPublicGuides(rawQuery: unknown, limit = SEARCH_RESULT_LIMIT): Promise<PublicGuideSummary[]> {
+  const query = sanitizePublicSearch(rawQuery);
+  if (!query) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("guides")
+    .select(GUIDE_LIST_SELECT)
+    .eq("status", "published")
+    .or(`title.ilike.%${query}%,slug.ilike.%${query}%`)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Failed to search guides: ${error.message}`);
   return ((data ?? []) as unknown as GuideRow[]).map(summaryFromRow);
 }

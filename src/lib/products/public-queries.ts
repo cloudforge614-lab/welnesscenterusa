@@ -99,7 +99,11 @@ export type PublicProductList = {
 // than imported from it — importing would pull public code onto a module
 // that also exports owner-only queries, blurring the boundary this file
 // exists to keep sharp, for the sake of four lines of pure string logic.
-function sanitizePublicSearch(raw: unknown): string {
+//
+// Exported (Phase 6 D): the four other public content modules' search
+// functions need the exact same sanitizer — re-declaring the same regex a
+// fourth and fifth time would be the real duplication risk, not this export.
+export function sanitizePublicSearch(raw: unknown): string {
   if (typeof raw !== "string") return "";
   return raw.replace(/[%_\\,()"*]/g, " ").replace(/\s+/g, " ").trim().slice(0, 100);
 }

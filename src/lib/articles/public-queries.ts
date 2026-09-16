@@ -2,8 +2,9 @@ import "server-only";
 
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { getSeoMetadata, type PublicSeoMetadata } from "@/lib/products/public-queries";
+import { getSeoMetadata, sanitizePublicSearch, type PublicSeoMetadata } from "@/lib/products/public-queries";
 import { markdownExcerpt } from "@/lib/content/markdown";
+import { SEARCH_RESULT_LIMIT } from "@/lib/search/types";
 
 // Mirrors guides/public-queries.ts exactly — same table shape (title, slug,
 // content, featured_image_path, category_id, author_id, status,
@@ -221,5 +222,21 @@ export async function getLatestPublicArticles(limit = 4): Promise<PublicArticleS
     .order("published_at", { ascending: false })
     .limit(limit);
   if (error) throw new Error(`Failed to load latest articles: ${error.message}`);
+  return ((data ?? []) as unknown as ArticleRow[]).map(summaryFromRow);
+}
+
+// Site-wide search's "Articles" section.
+export async function searchPublicArticles(rawQuery: unknown, limit = SEARCH_RESULT_LIMIT): Promise<PublicArticleSummary[]> {
+  const query = sanitizePublicSearch(rawQuery);
+  if (!query) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("articles")
+    .select(ARTICLE_LIST_SELECT)
+    .eq("status", "published")
+    .or(`title.ilike.%${query}%,slug.ilike.%${query}%`)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Failed to search articles: ${error.message}`);
   return ((data ?? []) as unknown as ArticleRow[]).map(summaryFromRow);
 }
