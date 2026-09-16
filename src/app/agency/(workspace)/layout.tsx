@@ -29,6 +29,12 @@ const AGENCY_NAV: SidebarNavItem[] = [
     icon: "M12 17.3 6.2 20.5l1.1-6.5L2.5 9.3l6.5-.9L12 2.5l3 5.9 6.5.9-4.8 4.7 1.1 6.5Z",
     match: "prefix",
   },
+  {
+    href: "/agency/guides",
+    label: "Guides",
+    icon: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13Z",
+    match: "prefix",
+  },
 ];
 
 const ROLE_LABEL: Record<string, string> = {
