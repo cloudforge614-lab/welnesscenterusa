@@ -1,11 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const LOGIN_PATH = "/admin/login";
+// /agency has its own login page (separate from /admin/login) since the two
+// areas gate on different roles; signed-out visitors are bounced to whichever
+// one matches the section they tried to reach.
+function loginPathFor(pathname: string) {
+  return pathname.startsWith("/agency") ? "/agency/login" : "/admin/login";
+}
 
 // Refreshes the Supabase session cookie and bounces signed-out visitors away
-// from the admin area. This is a convenience layer only: owner authorization
-// is enforced again in the admin layout and in every server action.
+// from the admin/agency areas. This is a convenience layer only: owner/agency
+// authorization is enforced again in the respective layout and every server
+// action.
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -30,10 +36,11 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const signedIn = Boolean(data?.claims?.sub);
   const { pathname, search } = request.nextUrl;
+  const loginPath = loginPathFor(pathname);
 
-  if (!signedIn && pathname !== LOGIN_PATH) {
+  if (!signedIn && pathname !== loginPath) {
     const url = request.nextUrl.clone();
-    url.pathname = LOGIN_PATH;
+    url.pathname = loginPath;
     url.search = "";
     url.searchParams.set("next", `${pathname}${search}`);
     return NextResponse.redirect(url);
@@ -44,5 +51,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin", "/admin/:path*"],
+  matcher: ["/admin", "/admin/:path*", "/agency", "/agency/:path*"],
 };

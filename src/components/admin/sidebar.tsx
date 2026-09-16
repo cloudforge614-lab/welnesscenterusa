@@ -2,39 +2,63 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { signOut } from "@/app/admin/actions";
 import { BrandMark, cx } from "./ui";
 
-const NAV = [
+// match is data ("exact" | "prefix"), not a function: this type crosses the
+// Server → Client Component boundary as a prop (agency/layout.tsx passes its
+// own nav list in), and functions aren't serializable across that boundary.
+export type SidebarNavItem = {
+  href: string;
+  label: string;
+  icon: string;
+  match: "exact" | "prefix";
+};
+
+function isActive(item: SidebarNavItem, pathname: string) {
+  return item.match === "exact" ? pathname === item.href : pathname.startsWith(item.href);
+}
+
+const OWNER_NAV: SidebarNavItem[] = [
   {
     href: "/admin",
     label: "Dashboard",
     icon: "M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6v-9h-6v9Zm0-16v5h6V4h-6Z",
-    match: (p: string) => p === "/admin",
+    match: "exact",
   },
   {
     href: "/admin/products",
     label: "Products",
     icon: "M3.5 8.5 12 4l8.5 4.5v7L12 20l-8.5-4.5v-7Zm0 0L12 13l8.5-4.5M12 13v7",
-    match: (p: string) => p.startsWith("/admin/products"),
+    match: "prefix",
   },
 ];
 
-export function Sidebar({ email }: { email: string | null }) {
+export function Sidebar({
+  email,
+  roleLabel = "Owner",
+  nav: navItems = OWNER_NAV,
+  signOutAction = signOut,
+}: {
+  email: string | null;
+  roleLabel?: string;
+  nav?: SidebarNavItem[];
+  signOutAction?: () => Promise<void>;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const nav = (
+  const nav: ReactNode = (
     <nav className="flex h-full flex-col">
       <div className="px-5 pb-6 pt-6">
         <BrandMark />
-        <p className="mt-2 pl-[42px] text-[11px] font-medium uppercase tracking-[0.14em] text-ink-subtle">Owner</p>
+        <p className="mt-2 pl-[42px] text-[11px] font-medium uppercase tracking-[0.14em] text-ink-subtle">{roleLabel}</p>
       </div>
 
       <ul className="space-y-1 px-3">
-        {NAV.map((item) => {
-          const active = item.match(pathname);
+        {navItems.map((item) => {
+          const active = isActive(item, pathname);
           return (
             <li key={item.href}>
               <Link
@@ -61,9 +85,9 @@ export function Sidebar({ email }: { email: string | null }) {
           Signed in as
         </p>
         <p className="truncate text-sm font-medium text-ink" title={email ?? undefined}>
-          {email ?? "Owner"}
+          {email ?? roleLabel}
         </p>
-        <form action={signOut} className="mt-3">
+        <form action={signOutAction} className="mt-3">
           <button
             type="submit"
             className="w-full rounded-lg border border-line-strong px-3 py-1.5 text-sm font-medium text-ink-muted transition hover:bg-sunken hover:text-ink"
