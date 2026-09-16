@@ -38,6 +38,19 @@ export default function AffiliateDisclosurePage() {
         </p>
       </StaticSection>
 
+      <StaticSection title="The merchant handles the purchase">
+        <p>
+          We don&apos;t sell anything on this site. If you decide to buy, that happens entirely on the
+          merchant&apos;s own website: they set the price, decide what&apos;s in stock, take the payment, ship the
+          order, and handle any returns, guarantees, or support afterwards. We aren&apos;t part of that
+          transaction, and we can&apos;t look up or change an order.
+        </p>
+        <p>
+          Prices and availability shown on this site can fall out of date. The merchant&apos;s page is always the
+          authoritative source for what something currently costs.
+        </p>
+      </StaticSection>
+
       <StaticSection title="Not medical advice">
         <p>
           Content on this site, including any product descriptions, is for general informational purposes and is
@@ -52,7 +65,8 @@ export default function AffiliateDisclosurePage() {
           <Link href="/contact" className="font-medium text-brand-700 hover:text-brand-800">
             contact page
           </Link>
-          .
+          . Our <Link href="/privacy-policy">privacy policy</Link> describes exactly what is recorded when you use
+          one of these links, and our <Link href="/terms">terms of use</Link> cover the rest.
         </p>
       </StaticSection>
     </StaticPage>

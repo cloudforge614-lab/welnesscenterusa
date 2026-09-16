@@ -1,10 +1,24 @@
 import type { ReactNode } from "react";
 
-export function StaticPage({ title, lead, children }: { title: string; lead?: string; children: ReactNode }) {
+export function StaticPage({
+  title,
+  lead,
+  updated,
+  children,
+}: {
+  title: string;
+  lead?: string;
+  // Rendered date for policy pages. Kept as plain display text rather than a
+  // formatted timestamp: this is the date the wording last changed, which is
+  // a fact about the document, not about the request.
+  updated?: string;
+  children: ReactNode;
+}) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20">
       <h1 className="font-display text-4xl text-ink">{title}</h1>
       {lead && <p className="mt-4 text-[17px] leading-relaxed text-ink-muted">{lead}</p>}
+      {updated && <p className="mt-4 text-sm text-ink-subtle">Last updated {updated}</p>}
       <div className="prose-content mt-10 space-y-8">{children}</div>
     </div>
   );
