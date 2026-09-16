@@ -24,19 +24,30 @@ import { Badge, buttonStyles, Card, cx, inputStyles, Spinner } from "@/component
 
 type Role = "agency_admin" | "seo_editor" | "content_editor";
 
-const TABS = [
-  { id: "overview", label: "Overview" },
-  { id: "benefits", label: "Benefits" },
-  { id: "ingredients", label: "Ingredients" },
-  { id: "faqs", label: "FAQs" },
-  { id: "images", label: "Images" },
-  { id: "seo", label: "SEO" },
+const ALL_TABS = [
+  { id: "overview", label: "Overview", group: "content" },
+  { id: "benefits", label: "Benefits", group: "content" },
+  { id: "ingredients", label: "Ingredients", group: "content" },
+  { id: "faqs", label: "FAQs", group: "content" },
+  { id: "images", label: "Images", group: "content" },
+  { id: "seo", label: "SEO", group: "seo" },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"];
+type TabId = (typeof ALL_TABS)[number]["id"];
+
+// A role only sees the tabs for sections it can actually write — e.g.
+// seo_editor has no path to product content at all, not even read-only, so
+// those tabs aren't rendered rather than shown disabled. RLS is still the
+// real boundary; this just keeps controls a role can't use off the screen.
+function tabsForRole(role: Role) {
+  if (role === "seo_editor") return ALL_TABS.filter((t) => t.group === "seo");
+  if (role === "content_editor") return ALL_TABS.filter((t) => t.group === "content");
+  return ALL_TABS;
+}
 
 export function ContentEditor({ product, role }: { product: AgencyProductDetail; role: Role }) {
-  const [tab, setTab] = useState<TabId>("overview");
+  const tabs = tabsForRole(role);
+  const [tab, setTab] = useState<TabId>(tabs[0].id);
   const canEditContent = role === "agency_admin" || role === "content_editor";
   const canEditSeo = role === "agency_admin" || role === "seo_editor";
 
@@ -44,7 +55,7 @@ export function ContentEditor({ product, role }: { product: AgencyProductDetail;
     <Card>
       <div className="flex items-center justify-between gap-4 border-b border-line px-2">
         <nav className="-mb-px flex gap-1 overflow-x-auto" aria-label="Content sections">
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <button
               key={t.id}
               type="button"
