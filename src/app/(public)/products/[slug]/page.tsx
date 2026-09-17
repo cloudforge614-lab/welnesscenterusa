@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { redirectIfMoved } from "@/lib/redirects/lookup";
 import { AffiliateDisclosure } from "@/components/public/disclosure";
 import { ProductGrid } from "@/components/public/product-card";
 import { CategoryChip, PlaceholderImage } from "@/components/public/ui";
@@ -60,7 +61,14 @@ export async function generateMetadata(props: PageProps<"/products/[slug]">): Pr
 export default async function ProductPage(props: PageProps<"/products/[slug]">) {
   const { slug } = await props.params;
   const product = await getPublicProduct(slug);
-  if (!product) notFound();
+  if (!product) {
+    // This slug resolves to nothing now — but it may be a URL that used to
+    // work before a slug change. redirectIfMoved() sends the visitor on only
+    // if the destination is currently publicly eligible; otherwise this falls
+    // through to the ordinary 404.
+    await redirectIfMoved(`/products/${slug}`);
+    notFound();
+  }
 
   // Parallel, not sequential: none of these four depend on each other's
   // result, only on product.id (already known) — fetching them one after

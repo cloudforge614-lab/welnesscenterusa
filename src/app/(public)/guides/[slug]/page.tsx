@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { redirectIfMoved } from "@/lib/redirects/lookup";
 import { CategoryChip, PlaceholderImage } from "@/components/public/ui";
 import { ProductGrid } from "@/components/public/product-card";
 import { siteUrl } from "@/lib/env";
@@ -52,7 +53,14 @@ export async function generateMetadata(props: PageProps<"/guides/[slug]">): Prom
 export default async function GuidePage(props: PageProps<"/guides/[slug]">) {
   const { slug } = await props.params;
   const guide = await getPublicGuide(slug);
-  if (!guide) notFound();
+  if (!guide) {
+    // This slug resolves to nothing now — but it may be a URL that used to
+    // work before a slug change. redirectIfMoved() sends the visitor on only
+    // if the destination is currently publicly eligible; otherwise this falls
+    // through to the ordinary 404.
+    await redirectIfMoved(`/guides/${slug}`);
+    notFound();
+  }
 
   const canonical = `${siteUrl}/guides/${guide.slug}`;
   const jsonLd = buildJsonLd(guide, canonical);

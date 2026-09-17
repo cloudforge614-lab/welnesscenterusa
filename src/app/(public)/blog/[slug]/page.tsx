@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { redirectIfMoved } from "@/lib/redirects/lookup";
 import { CategoryChip, PlaceholderImage } from "@/components/public/ui";
 import { ProductGrid } from "@/components/public/product-card";
 import { siteUrl } from "@/lib/env";
@@ -52,7 +53,14 @@ export async function generateMetadata(props: PageProps<"/blog/[slug]">): Promis
 export default async function ArticlePage(props: PageProps<"/blog/[slug]">) {
   const { slug } = await props.params;
   const article = await getPublicArticle(slug);
-  if (!article) notFound();
+  if (!article) {
+    // This slug resolves to nothing now — but it may be a URL that used to
+    // work before a slug change. redirectIfMoved() sends the visitor on only
+    // if the destination is currently publicly eligible; otherwise this falls
+    // through to the ordinary 404.
+    await redirectIfMoved(`/blog/${slug}`);
+    notFound();
+  }
 
   const canonical = `${siteUrl}/blog/${article.slug}`;
   const jsonLd = buildJsonLd(article, canonical);

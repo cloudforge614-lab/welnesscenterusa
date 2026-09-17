@@ -32,7 +32,10 @@ function clip(raw: unknown, max: number): string | null {
 function refresh(productId: string) {
   // Public cache: The product editor changes product_content (which gates whether the
   // product is publicly visible at all), images, and category assignments.
-  revalidatePublic(TAGS.products, TAGS.categories, TAGS.seo);
+  // TAGS.redirects: a slug change writes a historical-redirect row via the
+  // record_slug_change() trigger (0019), so the same action has to invalidate
+  // the redirect lookup alongside the content it changed.
+  revalidatePublic(TAGS.products, TAGS.categories, TAGS.seo, TAGS.redirects);
   revalidatePath("/agency");
   revalidatePath("/agency/products");
   revalidatePath(`/agency/products/${productId}`);

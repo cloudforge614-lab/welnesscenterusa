@@ -47,7 +47,10 @@ async function withOwner<T>(run: () => Promise<ActionResult<T>>): Promise<Action
 function refreshAdmin() {
   // Public cache: The owner controls product status, soft delete, name/slug and the
   // affiliate link — all of which change public eligibility or output.
-  revalidatePublic(TAGS.products, TAGS.categories);
+  // TAGS.redirects: a slug change writes a historical-redirect row via the
+  // record_slug_change() trigger (0019), so the same action has to invalidate
+  // the redirect lookup alongside the content it changed.
+  revalidatePublic(TAGS.products, TAGS.categories, TAGS.redirects);
   revalidatePath("/admin", "layout");
 }
 

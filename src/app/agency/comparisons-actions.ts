@@ -30,7 +30,10 @@ function clip(raw: unknown, max: number): string | null {
 
 function refresh(comparisonId?: string) {
   // Public cache: Includes comparison_products ordering and membership.
-  revalidatePublic(TAGS.comparisons, TAGS.seo);
+  // TAGS.redirects: a slug change writes a historical-redirect row via the
+  // record_slug_change() trigger (0019), so the same action has to invalidate
+  // the redirect lookup alongside the content it changed.
+  revalidatePublic(TAGS.comparisons, TAGS.seo, TAGS.redirects);
   revalidatePath("/agency/comparisons");
   if (comparisonId) revalidatePath(`/agency/comparisons/${comparisonId}`);
 }

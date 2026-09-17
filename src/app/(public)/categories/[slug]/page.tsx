@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { redirectIfMoved } from "@/lib/redirects/lookup";
 import { Pagination } from "@/components/public/pagination";
 import { ProductGrid } from "@/components/public/product-card";
 import { EmptyState } from "@/components/public/ui";
@@ -59,7 +60,14 @@ export default async function CategoryPage(props: PageProps<"/categories/[slug]"
   const page = parsePage(pageParam);
 
   const category = await getPublicCategory(slug);
-  if (!category) notFound();
+  if (!category) {
+    // This slug resolves to nothing now — but it may be a URL that used to
+    // work before a slug change. redirectIfMoved() sends the visitor on only
+    // if the destination is currently publicly eligible; otherwise this falls
+    // through to the ordinary 404.
+    await redirectIfMoved(`/categories/${slug}`);
+    notFound();
+  }
 
   // Parallel: pagination (products) and the two new sections all only need
   // category.id, already known — no reason to fetch them one after another.

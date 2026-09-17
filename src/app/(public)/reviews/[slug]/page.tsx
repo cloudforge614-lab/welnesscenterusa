@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { redirectIfMoved } from "@/lib/redirects/lookup";
 import { AffiliateDisclosure } from "@/components/public/disclosure";
 import { siteUrl } from "@/lib/env";
 import { formatDate } from "@/lib/format";
@@ -48,7 +49,14 @@ export async function generateMetadata(props: PageProps<"/reviews/[slug]">): Pro
 export default async function ReviewPage(props: PageProps<"/reviews/[slug]">) {
   const { slug } = await props.params;
   const review = await getPublicReview(slug);
-  if (!review) notFound();
+  if (!review) {
+    // This slug resolves to nothing now — but it may be a URL that used to
+    // work before a slug change. redirectIfMoved() sends the visitor on only
+    // if the destination is currently publicly eligible; otherwise this falls
+    // through to the ordinary 404.
+    await redirectIfMoved(`/reviews/${slug}`);
+    notFound();
+  }
 
   const canonical = `${siteUrl}/reviews/${review.slug}`;
   const jsonLd = buildJsonLd(review, canonical);

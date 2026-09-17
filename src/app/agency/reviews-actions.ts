@@ -39,7 +39,10 @@ function stringList(raw: unknown, maxItems: number, maxLen: number): string[] {
 function refresh(reviewId?: string) {
   // Public cache: A review's own status gates it; its parent product's eligibility is
   // re-checked at read time, so no product tag is needed here.
-  revalidatePublic(TAGS.reviews, TAGS.seo);
+  // TAGS.redirects: a slug change writes a historical-redirect row via the
+  // record_slug_change() trigger (0019), so the same action has to invalidate
+  // the redirect lookup alongside the content it changed.
+  revalidatePublic(TAGS.reviews, TAGS.seo, TAGS.redirects);
   revalidatePath("/agency/reviews");
   if (reviewId) revalidatePath(`/agency/reviews/${reviewId}`);
 }

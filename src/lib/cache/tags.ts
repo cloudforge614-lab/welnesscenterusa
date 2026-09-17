@@ -33,6 +33,12 @@ export const TAGS = {
   categories: "public:categories",
   /** seo_metadata rows, which feed generateMetadata on public routes. */
   seo: "public:seo",
+  /**
+   * Historical-slug redirects. Written automatically by the
+   * record_slug_change() trigger (migration 0019) whenever a slug changes, so
+   * the editorial actions that can cause a slug change invalidate this too.
+   */
+  redirects: "public:redirects",
 } as const;
 
 export type CacheTag = (typeof TAGS)[keyof typeof TAGS];

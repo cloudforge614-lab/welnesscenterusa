@@ -31,7 +31,10 @@ function clip(raw: unknown, max: number): string | null {
 
 function refresh(articleId?: string) {
   // Public cache: Includes related-product links and the featured image.
-  revalidatePublic(TAGS.articles, TAGS.seo);
+  // TAGS.redirects: a slug change writes a historical-redirect row via the
+  // record_slug_change() trigger (0019), so the same action has to invalidate
+  // the redirect lookup alongside the content it changed.
+  revalidatePublic(TAGS.articles, TAGS.seo, TAGS.redirects);
   revalidatePath("/agency/articles");
   if (articleId) revalidatePath(`/agency/articles/${articleId}`);
 }

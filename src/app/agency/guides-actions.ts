@@ -32,7 +32,10 @@ function clip(raw: unknown, max: number): string | null {
 function refresh(guideId?: string) {
   // Public cache: Includes related-product links and the featured image, both of which
   // only ever change guide output.
-  revalidatePublic(TAGS.guides, TAGS.seo);
+  // TAGS.redirects: a slug change writes a historical-redirect row via the
+  // record_slug_change() trigger (0019), so the same action has to invalidate
+  // the redirect lookup alongside the content it changed.
+  revalidatePublic(TAGS.guides, TAGS.seo, TAGS.redirects);
   revalidatePath("/agency/guides");
   if (guideId) revalidatePath(`/agency/guides/${guideId}`);
 }
