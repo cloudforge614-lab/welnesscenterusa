@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Pagination } from "@/components/public/pagination";
 import { CategoryChip, EmptyState, PlaceholderImage, Skeleton } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 import { formatDate } from "@/lib/format";
 import { GUIDES_PAGE_SIZE, listPublicGuides, type PublicGuideSummary } from "@/lib/guides/public-queries";
 
@@ -35,6 +36,13 @@ export async function generateMetadata(props: PageProps<"/guides">): Promise<Met
       description: "In-depth guides on health and wellness topics from Wellness Center USA.",
       url: canonical,
       type: "website",
+      images: ogImages(),
+    },
+    twitter: {
+      card: TWITTER_CARD,
+      title: `${title} · Wellness Center USA`,
+      description: "In-depth guides on health and wellness topics from Wellness Center USA.",
+      images: twitterImages(),
     },
   };
 }

@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Pagination } from "@/components/public/pagination";
 import { EmptyState, Skeleton } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 import { formatDate } from "@/lib/format";
 import { COMPARISONS_PAGE_SIZE, listPublicComparisons, type PublicComparisonSummary } from "@/lib/comparisons/public-queries";
 
@@ -35,6 +36,13 @@ export async function generateMetadata(props: PageProps<"/comparisons">): Promis
       description: "Side-by-side product comparisons from Wellness Center USA.",
       url: canonical,
       type: "website",
+      images: ogImages(),
+    },
+    twitter: {
+      card: TWITTER_CARD,
+      title: `${title} · Wellness Center USA`,
+      description: "Side-by-side product comparisons from Wellness Center USA.",
+      images: twitterImages(),
     },
   };
 }

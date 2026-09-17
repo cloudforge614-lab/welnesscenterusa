@@ -1,7 +1,32 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/public/site-nav";
 import { Analytics } from "@/components/public/analytics";
-import { analyticsEnabled, gaMeasurementId } from "@/lib/env";
+import type { Metadata } from "next";
+import { analyticsEnabled, gaMeasurementId, googleSiteVerification } from "@/lib/env";
+import { safeJsonLd } from "@/lib/content/json-ld";
+import { buildSiteStructuredData } from "@/lib/seo/structured-data";
+
+// Search Console's "HTML tag" verification, rendered only when the token is
+// configured.
+//
+// Declared in the PUBLIC layout rather than the application root (Step 7.10).
+// It was at the root, which meant the tag was also emitted into /admin/login
+// and /agency/login. The token is public by design — it exists to be read off
+// the page — so this is not a leak, and the change is about scope, not
+// secrecy: verification is a property of the public site, and this is the same
+// mechanism analytics and the site's structured data already use, where /admin
+// and /agency live outside this route group and so are excluded with no
+// runtime path check to get wrong.
+//
+// Verification is checked against the site root, which is in this group, so
+// scoping it here does not affect whether the property can be verified.
+//
+// The property itself still has to be verified in Search Console against the
+// live domain, and the sitemap submitted there. Neither can happen before
+// deployment; both remain production operational steps.
+export const metadata: Metadata = {
+  ...(googleSiteVerification ? { verification: { google: googleSiteVerification } } : {}),
+};
 
 const FOOTER_LINKS = [
   { href: "/affiliate-disclosure", label: "Affiliate Disclosure" },
@@ -12,6 +37,17 @@ const FOOTER_LINKS = [
 export default function PublicLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Organization + WebSite structured data, in the public layout for the
+          same reason analytics is: /admin and /agency live outside this route
+          group, so the site's public identity is never emitted into a staff
+          page. safeJsonLd(), never a raw JSON.stringify — the values here are
+          constants, but the escaping rule is applied uniformly so no future
+          edit can quietly introduce an unescaped one. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(buildSiteStructuredData()) }}
+      />
+
       {/* Mounted here, in the public layout, rather than the root layout. That
           is the whole of the staff-exclusion mechanism: /admin, /agency and
           both login pages live outside this route group, so they never load

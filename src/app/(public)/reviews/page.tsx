@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Pagination } from "@/components/public/pagination";
 import { EmptyState, Skeleton } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 import { formatDate } from "@/lib/format";
 import { listPublicReviews, REVIEWS_PAGE_SIZE, type PublicReviewSummary } from "@/lib/reviews/public-queries";
 
@@ -35,6 +36,13 @@ export async function generateMetadata(props: PageProps<"/reviews">): Promise<Me
       description: "Independent reviews of health and wellness products, researched and written by Wellness Center USA.",
       url: canonical,
       type: "website",
+      images: ogImages(),
+    },
+    twitter: {
+      card: TWITTER_CARD,
+      title: `${title} · Wellness Center USA`,
+      description: "Independent reviews of health and wellness products, researched and written by Wellness Center USA.",
+      images: twitterImages(),
     },
   };
 }

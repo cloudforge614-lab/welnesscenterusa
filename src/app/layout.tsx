@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
-import { googleSiteVerification, siteUrl } from "@/lib/env";
+import { siteUrl } from "@/lib/env";
 import "./globals.css";
 
 const inter = Inter({
@@ -21,10 +21,8 @@ export const metadata: Metadata = {
     template: "%s · Wellness Center USA",
   },
   description: "Independent health and wellness product research.",
-  // Search Console's "HTML tag" verification. Rendered only when the token is
-  // configured; the property itself still has to be verified in Search Console
-  // against the live domain, which cannot happen before deployment.
-  ...(googleSiteVerification ? { verification: { google: googleSiteVerification } } : {}),
+  // Search Console verification is NOT here — it lives in the public layout,
+  // so it is emitted on public pages only. See the note there.
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

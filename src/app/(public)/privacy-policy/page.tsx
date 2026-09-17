@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { StaticPage, StaticSection } from "@/components/public/static-page";
 import { siteUrl } from "@/lib/env";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 
 // Every statement on this page describes what the application actually does,
 // verified against the code rather than written from a template:
@@ -24,6 +25,21 @@ export const metadata: Metadata = {
     "How Wellness Center USA handles information: no visitor cookies, cookieless analytics that never sees your searches, and exactly what is recorded when an affiliate link is clicked.",
   alternates: { canonical: `${siteUrl}/privacy-policy` },
   robots: { index: true, follow: true },
+  openGraph: {
+    title: "Privacy Policy · Wellness Center USA",
+    description:
+      "How Wellness Center USA handles information: no visitor cookies, cookieless analytics that never sees your searches, and exactly what is recorded when an affiliate link is clicked.",
+    url: `${siteUrl}/privacy-policy`,
+    type: "website",
+    images: ogImages(),
+  },
+  twitter: {
+    card: TWITTER_CARD,
+    title: "Privacy Policy · Wellness Center USA",
+    description:
+      "How Wellness Center USA handles information: no visitor cookies, cookieless analytics that never sees your searches, and exactly what is recorded when an affiliate link is clicked.",
+    images: twitterImages(),
+  },
 };
 
 const UPDATED = "September 17, 2026";

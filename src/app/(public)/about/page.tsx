@@ -2,12 +2,29 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { StaticPage, StaticSection } from "@/components/public/static-page";
 import { siteUrl } from "@/lib/env";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 
 export const metadata: Metadata = {
   title: "About",
-  description: "About Wellness Center USA — a health and wellness product discovery platform.",
+  description:
+    "About Wellness Center USA — a health and wellness product discovery platform.",
   alternates: { canonical: `${siteUrl}/about` },
   robots: { index: true, follow: true },
+  openGraph: {
+    title: "About · Wellness Center USA",
+    description:
+      "About Wellness Center USA — a health and wellness product discovery platform.",
+    url: `${siteUrl}/about`,
+    type: "website",
+    images: ogImages(),
+  },
+  twitter: {
+    card: TWITTER_CARD,
+    title: "About · Wellness Center USA",
+    description:
+      "About Wellness Center USA — a health and wellness product discovery platform.",
+    images: twitterImages(),
+  },
 };
 
 export default function AboutPage() {

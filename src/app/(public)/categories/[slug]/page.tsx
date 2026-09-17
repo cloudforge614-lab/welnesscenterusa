@@ -7,6 +7,7 @@ import { ProductGrid } from "@/components/public/product-card";
 import { EmptyState } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
 import { safeJsonLd } from "@/lib/content/json-ld";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 import { ContentLinkSection } from "@/components/public/content-link-section";
 import {
   getCategoryProducts,
@@ -31,14 +32,38 @@ function parsePage(value: string | string[] | undefined): number {
 
 export async function generateMetadata(props: PageProps<"/categories/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
+  const { page: pageParam } = await props.searchParams;
+  const page = parsePage(pageParam);
+
   const category = await getPublicCategory(slug);
   if (!category) return { title: "Category not found" };
 
   const seo = await getCategorySeoMetadata(category.id);
-  const canonical = `${siteUrl}/categories/${category.slug}`;
-  const title = seo?.title || category.name;
+
+  // PAGINATION CANONICALS (Step 7.10).
+  //
+  // Each paginated page self-canonicalises rather than pointing every page at
+  // page 1. Page 2 of a category holds genuinely different products, so
+  // canonicalising it to page 1 would tell Google those products live on a
+  // URL they do not appear on, and they would simply drop out of the index.
+  // Self-canonical is Google's own current guidance for paginated sequences.
+  //
+  // This matches what /products, /reviews, /guides, /blog and /comparisons
+  // already do — this route was the one that did not, so its page 2 claimed
+  // to be page 1.
+  const canonical = page > 1 ? `${siteUrl}/categories/${category.slug}?page=${page}` : `${siteUrl}/categories/${category.slug}`;
+  const baseTitle = seo?.title || category.name;
+  const title = page > 1 ? `${baseTitle} — Page ${page}` : baseTitle;
   const description = seo?.metaDescription || category.description || `Browse ${category.name} products at Wellness Center USA.`;
-  const indexable = (seo?.robotsIndex ?? true) && (seo?.robotsFollow ?? true);
+
+  // A page past the end of the sequence has no products on it. It is a real
+  // 200 (the category exists), but indexing an empty page would put an
+  // unbounded number of ?page=N duplicates into the index, so those are
+  // noindex'd while staying followable. The count comes from the same cached
+  // query the page body uses, so this costs no extra round trip.
+  const { pageCount } = await getCategoryProducts(category.id, page);
+  const beyondLastPage = page > 1 && page > pageCount;
+  const indexable = (seo?.robotsIndex ?? true) && (seo?.robotsFollow ?? true) && !beyondLastPage;
 
   return {
     title,
@@ -50,6 +75,13 @@ export async function generateMetadata(props: PageProps<"/categories/[slug]">): 
       description: seo?.ogDescription || description,
       url: canonical,
       type: "website",
+      images: ogImages(seo?.ogImagePath),
+    },
+    twitter: {
+      card: TWITTER_CARD,
+      title: seo?.ogTitle || title,
+      description: seo?.ogDescription || description,
+      images: twitterImages(seo?.ogImagePath),
     },
   };
 }

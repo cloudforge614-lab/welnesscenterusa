@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PlaceholderNotice, StaticPage, StaticSection } from "@/components/public/static-page";
 import { contactEmail, siteUrl } from "@/lib/env";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 
 // There is deliberately no contact form here. A form needs somewhere to send
 // what it collects, and this application has no mail transport and no public
@@ -16,6 +17,21 @@ export const metadata: Metadata = {
     "How to reach Wellness Center USA about a product page, a correction, or a question about how this site works.",
   alternates: { canonical: `${siteUrl}/contact` },
   robots: { index: true, follow: true },
+  openGraph: {
+    title: "Contact · Wellness Center USA",
+    description:
+      "How to reach Wellness Center USA about a product page, a correction, or a question about how this site works.",
+    url: `${siteUrl}/contact`,
+    type: "website",
+    images: ogImages(),
+  },
+  twitter: {
+    card: TWITTER_CARD,
+    title: "Contact · Wellness Center USA",
+    description:
+      "How to reach Wellness Center USA about a product page, a correction, or a question about how this site works.",
+    images: twitterImages(),
+  },
 };
 
 export default function ContactPage() {

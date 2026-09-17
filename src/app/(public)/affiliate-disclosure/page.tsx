@@ -2,12 +2,29 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { StaticPage, StaticSection } from "@/components/public/static-page";
 import { siteUrl } from "@/lib/env";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 
 export const metadata: Metadata = {
   title: "Affiliate Disclosure",
-  description: "How Wellness Center USA uses affiliate links.",
+  description:
+    "How Wellness Center USA uses affiliate links.",
   alternates: { canonical: `${siteUrl}/affiliate-disclosure` },
   robots: { index: true, follow: true },
+  openGraph: {
+    title: "Affiliate Disclosure · Wellness Center USA",
+    description:
+      "How Wellness Center USA uses affiliate links.",
+    url: `${siteUrl}/affiliate-disclosure`,
+    type: "website",
+    images: ogImages(),
+  },
+  twitter: {
+    card: TWITTER_CARD,
+    title: "Affiliate Disclosure · Wellness Center USA",
+    description:
+      "How Wellness Center USA uses affiliate links.",
+    images: twitterImages(),
+  },
 };
 
 export default function AffiliateDisclosurePage() {

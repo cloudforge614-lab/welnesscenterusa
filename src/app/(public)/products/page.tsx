@@ -4,6 +4,7 @@ import { Pagination } from "@/components/public/pagination";
 import { ProductGrid } from "@/components/public/product-card";
 import { EmptyState, Skeleton } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 import { listPublicProducts, PUBLIC_PAGE_SIZE } from "@/lib/products/public-queries";
 
 // Publicly cacheable. Editorial actions invalidate this immediately through
@@ -34,6 +35,13 @@ export async function generateMetadata(props: PageProps<"/products">): Promise<M
       description: "Browse health and wellness products researched and reviewed by Wellness Center USA.",
       url: canonical,
       type: "website",
+      images: ogImages(),
+    },
+    twitter: {
+      card: TWITTER_CARD,
+      title: `${title} · Wellness Center USA`,
+      description: "Browse health and wellness products researched and reviewed by Wellness Center USA.",
+      images: twitterImages(),
     },
   };
 }

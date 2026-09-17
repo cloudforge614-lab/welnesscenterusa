@@ -5,6 +5,7 @@ import { SearchResultCard } from "@/components/public/search-result-card";
 import { SearchAnalytics } from "@/components/public/analytics";
 import { EmptyState, Skeleton } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 import { searchPublicProducts } from "@/lib/products/public-queries";
 import { searchPublicReviews } from "@/lib/reviews/public-queries";
 import { searchPublicGuides } from "@/lib/guides/public-queries";
@@ -39,6 +40,13 @@ export async function generateMetadata(props: PageProps<"/search">): Promise<Met
       description: "Search products, reviews, guides, articles, and comparisons at Wellness Center USA.",
       url: `${siteUrl}/search`,
       type: "website",
+      images: ogImages(),
+    },
+    twitter: {
+      card: TWITTER_CARD,
+      title: query ? `“${query}” search results · Wellness Center USA` : "Search · Wellness Center USA",
+      description: "Search products, reviews, guides, articles, and comparisons at Wellness Center USA.",
+      images: twitterImages(),
     },
   };
 }

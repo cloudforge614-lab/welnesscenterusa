@@ -6,6 +6,8 @@ import { AffiliateDisclosure } from "@/components/public/disclosure";
 import { siteUrl } from "@/lib/env";
 import { formatDate } from "@/lib/format";
 import { safeJsonLd } from "@/lib/content/json-ld";
+import { ORGANIZATION_REF } from "@/lib/seo/structured-data";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 import { renderMarkdown } from "@/lib/content/markdown";
 import { getPublicReview, getReviewSeoMetadata, type PublicReviewDetail } from "@/lib/reviews/public-queries";
 
@@ -37,11 +39,13 @@ export async function generateMetadata(props: PageProps<"/reviews/[slug]">): Pro
       description: seo?.ogDescription || description,
       url: canonical,
       type: "article",
+      images: ogImages(seo?.ogImagePath),
     },
     twitter: {
-      card: "summary",
+      card: TWITTER_CARD,
       title: seo?.ogTitle || title,
       description: seo?.ogDescription || description,
+      images: twitterImages(seo?.ogImagePath),
     },
   };
 }
@@ -162,7 +166,12 @@ function buildJsonLd(review: PublicReviewDetail, canonical: string) {
     headline: review.title,
     url: canonical,
     itemReviewed: { "@type": "Product", name: review.product.name, url: `${siteUrl}/products/${review.product.slug}` },
-    author: { "@type": "Organization", name: "Wellness Center USA" },
+    // Attribution is the publisher, referenced by @id into the Organization
+    // node the public layout emits — one entity, stated once. Individual
+    // bylines remain deferred; see ORGANIZATION_ID in src/lib/seo/
+    // structured-data.ts for why that is a security decision.
+    author: ORGANIZATION_REF,
+    publisher: ORGANIZATION_REF,
     ...(review.publishedAt ? { datePublished: review.publishedAt } : {}),
     dateModified: review.updatedAt,
   };

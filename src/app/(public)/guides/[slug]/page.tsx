@@ -7,6 +7,8 @@ import { ProductGrid } from "@/components/public/product-card";
 import { siteUrl } from "@/lib/env";
 import { formatDate } from "@/lib/format";
 import { safeJsonLd } from "@/lib/content/json-ld";
+import { ORGANIZATION_REF } from "@/lib/seo/structured-data";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 import { renderMarkdown } from "@/lib/content/markdown";
 import { getGuideSeoMetadata, getPublicGuide, type PublicGuideDetail } from "@/lib/guides/public-queries";
 
@@ -39,13 +41,13 @@ export async function generateMetadata(props: PageProps<"/guides/[slug]">): Prom
       description: seo?.ogDescription || description,
       url: canonical,
       type: "article",
-      images: ogImage ? [{ url: ogImage }] : undefined,
+      images: ogImages(ogImage),
     },
     twitter: {
-      card: ogImage ? "summary_large_image" : "summary",
+      card: TWITTER_CARD,
       title: seo?.ogTitle || title,
       description: seo?.ogDescription || description,
-      images: ogImage ? [ogImage] : undefined,
+      images: twitterImages(ogImage),
     },
   };
 }
@@ -143,7 +145,12 @@ function buildJsonLd(guide: PublicGuideDetail, canonical: string) {
     "@type": "Article",
     headline: guide.title,
     url: canonical,
-    author: { "@type": "Organization", name: "Wellness Center USA" },
+    // Attribution is the publisher, referenced by @id into the Organization
+    // node the public layout emits — one entity, stated once. Individual
+    // bylines remain deferred; see ORGANIZATION_ID in src/lib/seo/
+    // structured-data.ts for why that is a security decision.
+    author: ORGANIZATION_REF,
+    publisher: ORGANIZATION_REF,
     ...(guide.publishedAt ? { datePublished: guide.publishedAt } : {}),
     dateModified: guide.updatedAt,
     ...(guide.featuredImagePath ? { image: guide.featuredImagePath } : {}),

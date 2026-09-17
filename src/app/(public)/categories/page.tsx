@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CategoryChip, EmptyState } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 import { getPublicCategoriesWithProducts } from "@/lib/products/public-queries";
 
 // Publicly cacheable. Editorial actions invalidate this immediately through
@@ -21,6 +22,13 @@ export const metadata: Metadata = {
     description: "Browse health and wellness products by category.",
     url: `${siteUrl}/categories`,
     type: "website",
+    images: ogImages(),
+  },
+  twitter: {
+    card: TWITTER_CARD,
+    title: "Categories · Wellness Center USA",
+    description: "Browse health and wellness products by category.",
+    images: twitterImages(),
   },
 };
 

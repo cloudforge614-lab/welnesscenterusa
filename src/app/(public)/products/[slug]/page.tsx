@@ -7,6 +7,7 @@ import { ProductGrid } from "@/components/public/product-card";
 import { CategoryChip, PlaceholderImage } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
 import { safeJsonLd } from "@/lib/content/json-ld";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 import { ContentLinkSection } from "@/components/public/content-link-section";
 import { getProductSeoMetadata, getPublicProduct, getRelatedProducts, type PublicProductDetail } from "@/lib/products/public-queries";
 import { getProductReviews } from "@/lib/reviews/public-queries";
@@ -47,13 +48,13 @@ export async function generateMetadata(props: PageProps<"/products/[slug]">): Pr
       description: seo?.ogDescription || description,
       url: canonical,
       type: "website",
-      images: ogImage ? [{ url: ogImage }] : undefined,
+      images: ogImages(ogImage),
     },
     twitter: {
-      card: ogImage ? "summary_large_image" : "summary",
+      card: TWITTER_CARD,
       title: seo?.ogTitle || title,
       description: seo?.ogDescription || description,
-      images: ogImage ? [ogImage] : undefined,
+      images: twitterImages(ogImage),
     },
   };
 }

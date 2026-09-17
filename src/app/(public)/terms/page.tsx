@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { StaticPage, StaticSection } from "@/components/public/static-page";
 import { siteUrl } from "@/lib/env";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 
 // Scoped to what this site actually is: an informational product-discovery
 // site that links out to merchants. It deliberately makes no claim about
@@ -17,6 +18,21 @@ export const metadata: Metadata = {
     "The terms that apply to using Wellness Center USA: an informational product-discovery site that links to third-party merchants and does not sell products.",
   alternates: { canonical: `${siteUrl}/terms` },
   robots: { index: true, follow: true },
+  openGraph: {
+    title: "Terms of Use · Wellness Center USA",
+    description:
+      "The terms that apply to using Wellness Center USA: an informational product-discovery site that links to third-party merchants and does not sell products.",
+    url: `${siteUrl}/terms`,
+    type: "website",
+    images: ogImages(),
+  },
+  twitter: {
+    card: TWITTER_CARD,
+    title: "Terms of Use · Wellness Center USA",
+    description:
+      "The terms that apply to using Wellness Center USA: an informational product-discovery site that links to third-party merchants and does not sell products.",
+    images: twitterImages(),
+  },
 };
 
 const UPDATED = "September 17, 2026";

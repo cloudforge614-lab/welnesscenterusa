@@ -5,6 +5,7 @@ import { ProductGrid } from "@/components/public/product-card";
 import { ContentLinkSection } from "@/components/public/content-link-section";
 import { CategoryChip, EmptyState, Skeleton } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
+import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
 import { getLatestPublicProducts, getPublicCategoriesWithProducts } from "@/lib/products/public-queries";
 import { getLatestPublicReviews } from "@/lib/reviews/public-queries";
 import { getLatestPublicGuides } from "@/lib/guides/public-queries";
@@ -29,6 +30,14 @@ export const metadata: Metadata = {
       "Wellness Center USA researches and organizes health and wellness products so you can make informed decisions.",
     url: siteUrl,
     type: "website",
+    images: ogImages(),
+  },
+  twitter: {
+    card: TWITTER_CARD,
+    title: "Wellness Center USA — Health & Wellness Product Discovery",
+    description:
+      "Wellness Center USA researches and organizes health and wellness products so you can make informed decisions.",
+    images: twitterImages(),
   },
 };
 
