@@ -33,6 +33,12 @@ const OWNER_NAV: SidebarNavItem[] = [
     icon: "M3.5 8.5 12 4l8.5 4.5v7L12 20l-8.5-4.5v-7Zm0 0L12 13l8.5-4.5M12 13v7",
     match: "prefix",
   },
+  {
+    href: "/admin/analytics",
+    label: "Analytics",
+    icon: "M4 19h16M7 19V10m5 9V5m5 14v-7",
+    match: "prefix",
+  },
 ];
 
 export function Sidebar({

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       affiliate_clicks: {
@@ -20,7 +45,6 @@ export type Database = {
           cta_location: string | null
           device_type: Database["public"]["Enums"]["device_type"]
           id: string
-          ip_hash: string | null
           landing_page: string | null
           product_id: string
           referrer: string | null
@@ -35,7 +59,6 @@ export type Database = {
           cta_location?: string | null
           device_type?: Database["public"]["Enums"]["device_type"]
           id?: string
-          ip_hash?: string | null
           landing_page?: string | null
           product_id: string
           referrer?: string | null
@@ -50,7 +73,6 @@ export type Database = {
           cta_location?: string | null
           device_type?: Database["public"]["Enums"]["device_type"]
           id?: string
-          ip_hash?: string | null
           landing_page?: string | null
           product_id?: string
           referrer?: string | null
@@ -931,6 +953,10 @@ export type Database = {
         Args: { p_base: string; p_exclude_id?: string; p_table: string }
         Returns: string
       }
+      owner_click_analytics: {
+        Args: { p_since: string; p_until: string }
+        Returns: Json
+      }
       record_affiliate_click: {
         Args: {
           p_cta_location?: string
@@ -1103,6 +1129,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       content_status: ["draft", "published"],
