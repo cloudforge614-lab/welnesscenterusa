@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { parseDeviceType } from "@/lib/products/device";
+import { classifyClick } from "@/lib/products/click-integrity";
 
 // The tracked affiliate redirect. Uses the existing Phase 1 RPCs exclusively
 // — get_active_affiliate_link()/record_affiliate_click() are SECURITY
@@ -66,28 +67,41 @@ export async function GET(request: NextRequest, props: RouteContext<"/go/[slug]"
   const destination = linkRows?.[0]?.destination_url;
   if (!destination) return notFoundResponse();
 
-  const { referrer, landingPage } = splitReferer(request.headers.get("referer"), request.nextUrl.origin);
-  const { searchParams } = request.nextUrl;
+  // Click integrity (Phase 7.7). Deliberately evaluated AFTER eligibility has
+  // already been confirmed and the destination resolved, so it can only ever
+  // decide whether this click is *counted* — never whether the visitor gets
+  // through. An eligible product always redirects, including for traffic
+  // judged automated, so a misjudgement costs an uncounted click rather than a
+  // broken link, and there is no behavioural difference for an abuser to probe.
+  const decision = classifyClick(slug, request, request.method);
 
-  try {
-    await supabase.rpc("record_affiliate_click", {
-      p_slug: slug,
-      p_referrer: referrer ?? undefined,
-      p_landing_page: landingPage ?? undefined,
-      p_cta_location: searchParams.get("cta") ?? undefined,
-      p_utm_source: searchParams.get("utm_source") ?? undefined,
-      p_utm_medium: searchParams.get("utm_medium") ?? undefined,
-      p_utm_campaign: searchParams.get("utm_campaign") ?? undefined,
-      p_utm_term: searchParams.get("utm_term") ?? undefined,
-      p_utm_content: searchParams.get("utm_content") ?? undefined,
-      p_device_type: parseDeviceType(request.headers.get("user-agent")),
-    });
-  } catch (err) {
-    // Tracking is best-effort: a click-logging failure (e.g. the product
-    // became ineligible in the instant between the two RPC calls) must
-    // never block a visitor who was just handed a valid destination.
-    console.error("[go] record_affiliate_click failed", { slug, error: err });
+  if (decision.record) {
+    const { referrer, landingPage } = splitReferer(request.headers.get("referer"), request.nextUrl.origin);
+    const { searchParams } = request.nextUrl;
+
+    try {
+      await supabase.rpc("record_affiliate_click", {
+        p_slug: slug,
+        p_referrer: referrer ?? undefined,
+        p_landing_page: landingPage ?? undefined,
+        p_cta_location: searchParams.get("cta") ?? undefined,
+        p_utm_source: searchParams.get("utm_source") ?? undefined,
+        p_utm_medium: searchParams.get("utm_medium") ?? undefined,
+        p_utm_campaign: searchParams.get("utm_campaign") ?? undefined,
+        p_utm_term: searchParams.get("utm_term") ?? undefined,
+        p_utm_content: searchParams.get("utm_content") ?? undefined,
+        p_device_type: parseDeviceType(request.headers.get("user-agent")),
+      });
+    } catch (err) {
+      // Tracking is best-effort: a click-logging failure (e.g. the product
+      // became ineligible in the instant between the two RPC calls) must
+      // never block a visitor who was just handed a valid destination.
+      console.error("[go] record_affiliate_click failed", { slug, error: err });
+    }
   }
+  // No else branch on purpose: a filtered request is not an error and is not
+  // logged. Logging every automated hit would turn ordinary crawler traffic
+  // into monitoring noise, which Step 7.4 exists to keep clean.
 
   const response = NextResponse.redirect(destination, { status: 302 });
   response.headers.set("Cache-Control", "no-store");

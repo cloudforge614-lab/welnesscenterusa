@@ -60,7 +60,23 @@ export default function PrivacyPolicyPage() {
         </ul>
         <p>
           That record is not connected to you. It contains no name, no email address, no account identifier, no
-          cookie value, and no IP address, and there is nothing in it that links one click to another.
+          cookie value, and no IP address, and there is nothing in it that links one click to another. There is no
+          longer even a column in which an IP address could be stored.
+        </p>
+        <p>
+          <strong>Not every request is counted.</strong> These figures are only useful if they reflect people, so
+          we leave some requests out of them: automated ones that identify themselves as software rather than a
+          browser, requests that only ask for a link&apos;s headers (the kind a chat app makes to build a link
+          preview), and repeats of the same request within a few seconds, which are usually a double-click rather
+          than a second decision.
+        </p>
+        <p>
+          Two things follow from that, and both matter. Deciding a request was automated only affects whether it is
+          counted — the link still works exactly the same way, and you are always sent to the merchant. And the
+          judgement is made from the request as it arrives, then discarded: we do not store what your browser
+          reported, we do not give you an identifier, and we cannot tell that two visits came from the same person.
+          It is also imperfect by nature. Software that presents itself as an ordinary browser will be counted like
+          one, and we make no claim to detect it.
         </p>
         <p>
           <strong>When you contact us.</strong> If you email us, we receive whatever you choose to put in that
