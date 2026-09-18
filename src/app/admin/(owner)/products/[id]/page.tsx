@@ -164,7 +164,7 @@ function referrerLabel(referrer: string | null, utmSource: string | null) {
 function VisibilityExplainer({ status, contentPublished }: { status: string; contentPublished: boolean }) {
   let message: string | null = null;
   if (status === "active" && !contentPublished) {
-    message = "Active and ready. It appears on the public site as soon as the agency publishes its content.";
+    message = "Active. It's showing as a card on the homepage now — its own product page goes live once the agency publishes content.";
   } else if (status === "new" && contentPublished) {
     message = "The agency has published content. Activate the product to put it live on the site.";
   } else if (status === "new") {

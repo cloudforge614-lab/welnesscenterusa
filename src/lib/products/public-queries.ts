@@ -468,16 +468,47 @@ export const getAllPublicCategorySlugs = cachedPublic("products:getAllPublicCate
 // Homepage support
 // ============================================================================
 
+// The shape returned by get_homepage_products() (migration 0022) — see that
+// migration for why this exists as a separate SECURITY DEFINER function
+// rather than a plain select through products_public_select.
+type HomepageProductRow = {
+  id: string;
+  name: string;
+  slug: string;
+  overview: string | null;
+  image_path: string | null;
+  image_alt: string | null;
+  categories: { id: string; name: string; slug: string }[];
+  created_at: string;
+};
+
+// Homepage "Latest products". Unlike every other public product query in
+// this file, this one does NOT require published product_content — an
+// Owner-created product (name + main image + affiliate URL, no Agency
+// content yet) is eligible the moment it's active, so the homepage can show
+// it immediately. get_active_affiliate_link (0010) established the pattern
+// this follows: a narrow, hand-audited function that reads past the normal
+// gate for one specific purpose, rather than loosening the general RLS
+// policy every other public query still relies on. The product's own detail
+// page, the sitemap, and category pages are completely unaffected — they
+// still require published content, exactly as before this function existed.
+//
+// The function itself LEFT JOINs product_content (with the published filter
+// in the join condition, not a WHERE clause) and product_categories, so a
+// product that already has published content and assigned categories keeps
+// showing its excerpt and category chips exactly as it did before — only a
+// content-less product gets null/empty for those fields.
 export const getLatestPublicProducts = cachedPublic("products:getLatestPublicProducts", [TAGS.products, TAGS.categories], TTL.feed, async (limit: number = 8): Promise<PublicProductSummary[]> => {
   const supabase = createPublicClient();
-  const { data, error } = await supabase
-    .from("products")
-    .select(PRODUCT_SUMMARY_SELECT)
-    .eq("status", "active")
-    .is("deleted_at", null)
-    .eq("product_content.status", "published")
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const { data, error } = await supabase.rpc("get_homepage_products", { p_limit: limit });
   if (error) throw new Error(`Failed to load latest products: ${error.message}`);
-  return ((data ?? []) as unknown as SummaryRow[]).map(summaryFromRow);
+  return ((data ?? []) as HomepageProductRow[]).map((row) => ({
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    excerpt: excerptFrom(row.overview),
+    imagePath: row.image_path,
+    imageAlt: row.image_alt,
+    categories: row.categories ?? [],
+  }));
 });

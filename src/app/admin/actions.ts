@@ -6,9 +6,10 @@ import { redirect } from "next/navigation";
 import { assertOwner, NotOwnerError } from "@/lib/auth/owner";
 import { isUuid } from "@/lib/products/queries";
 import { validateAffiliateUrl, validateProductName } from "@/lib/products/validation";
+import { uploadProductImageFile } from "@/lib/products/image-upload";
 import { createClient } from "@/lib/supabase/server";
 
-export type FieldErrors = Partial<Record<"name" | "affiliateUrl", string>>;
+export type FieldErrors = Partial<Record<"name" | "affiliateUrl" | "image", string>>;
 
 export type ActionResult<T = unknown> =
   | { ok: true; message: string; data?: T }
@@ -54,20 +55,56 @@ function refreshAdmin() {
   revalidatePath("/admin", "layout");
 }
 
-export async function createProduct(input: { name: unknown; affiliateUrl: unknown }) {
+// Takes FormData rather than a plain object because the required main image
+// (a File) has to travel through here too — Server Actions can carry a File
+// only inside FormData, never in a plain JSON-serializable argument.
+export async function createProduct(formData: FormData) {
   return withOwner<{ id: string; name: string; slug: string }>(async () => {
-    const name = validateProductName(input?.name);
-    const url = validateAffiliateUrl(input?.affiliateUrl);
-    if (!name.ok || !url.ok) {
+    const name = validateProductName(formData.get("name"));
+    const url = validateAffiliateUrl(formData.get("affiliateUrl"));
+    const file = formData.get("image");
+    const imageMissing = !(file instanceof File) || file.size === 0;
+
+    if (!name.ok || !url.ok || imageMissing) {
       return fail("Please fix the highlighted fields.", {
         name: name.ok ? undefined : name.error,
         affiliateUrl: url.ok ? undefined : url.error,
+        image: imageMissing ? "Choose a product image." : undefined,
       });
     }
 
     const { supabase } = await assertOwner();
+    // create_product itself still inserts as 'new', unchanged — it's the one
+    // RPC every product-creating caller shares, including every existing
+    // Agency-content-review fixture across earlier phases, none of which
+    // should auto-activate. "Immediately live on the homepage" is applied
+    // here instead, as a second write scoped to exactly this flow, once the
+    // required image has actually been attached.
     const { data, error } = await supabase.rpc("create_product", { p_name: name.value, p_affiliate_url: url.value });
     if (error) return describeDbError(error);
+
+    // The image is required, so a product created without one is not a valid
+    // outcome — roll back rather than leave a half-finished row behind.
+    // Soft delete is the only removal path this schema supports (see
+    // deleteProduct below): products has no DELETE policy, by design, since
+    // click history and Agency content cascade from it.
+    const uploadResult = await uploadProductImageFile(supabase, data.id, file, null);
+    if (!uploadResult.ok) {
+      await supabase.from("products").update({ deleted_at: new Date().toISOString() }).eq("id", data.id);
+      return fail(uploadResult.error, { image: uploadResult.error });
+    }
+
+    // Name + main image + affiliate URL is the whole of what this flow asks
+    // for, so there is nothing left to wait on — go live now rather than
+    // leaving it at 'new' for a separate manual Activate click.
+    const { error: activateError } = await supabase.from("products").update({ status: "active" }).eq("id", data.id);
+    if (activateError) {
+      console.error("[admin action] failed to auto-activate new product", activateError);
+      // Non-fatal: the product and its image both exist and are correct: the
+      // owner can activate it with one click from its page. Surfacing this
+      // as a hard failure here would be misleading — creation itself fully
+      // succeeded.
+    }
 
     refreshAdmin();
     return { ok: true, message: `“${data.name}” added`, data: { id: data.id, name: data.name, slug: data.slug } };

@@ -943,6 +943,19 @@ export type Database = {
           product_id: string
         }[]
       }
+      get_homepage_products: {
+        Args: { p_limit?: number }
+        Returns: {
+          categories: Json
+          created_at: string
+          id: string
+          image_alt: string
+          image_path: string
+          name: string
+          overview: string
+          slug: string
+        }[]
+      }
       has_any_role: {
         Args: { roles: Database["public"]["Enums"]["user_role"][] }
         Returns: boolean
