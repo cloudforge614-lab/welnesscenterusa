@@ -57,16 +57,16 @@ export default function HomePage() {
   );
 }
 
-// hero-products.webp (src/app/(public)/_assets/) is a cropped, optimized
-// still of real, generic wellness-product photography — bottles, citrus,
-// turmeric, greenery — used purely as decorative background texture. It was
-// cropped from a larger reference mockup that also contained a fabricated
-// review count, a fabricated discount badge, and cart/account icons this
-// site has no equivalent of (no accounts, no cart — /go/[slug] is the only
-// purchase path, and it leaves this site entirely). None of that survived
-// the crop. Nothing here claims these specific bottles are real listings;
-// the actual homepage catalogue renders below in DiscoverySections, from
-// real database rows only.
+// hero-products.webp (src/app/(public)/_assets/) is a cropped, lightly
+// softened still of real, generic wellness-product photography — bottles,
+// citrus, turmeric, greenery — used purely as decorative background
+// texture. It was cropped from a larger reference mockup that also
+// contained a fabricated review count, a fabricated discount badge, and
+// cart/account icons this site has no equivalent of (no accounts, no cart —
+// /go/[slug] is the only purchase path, and it leaves this site entirely).
+// None of that survived the crop. Nothing here claims these specific
+// bottles are real listings; the actual homepage catalogue renders below in
+// DiscoverySections, from real database rows only.
 function Hero() {
   return (
     <section className="relative overflow-hidden border-b border-line bg-brand-900">
@@ -85,16 +85,20 @@ function Hero() {
           sizes="100vw"
           className="object-cover object-center"
         />
-        {/* hero-products.webp is pre-blurred at the file level (see the
-            asset comment above) specifically so no packaging text is ever
-            legible, at any viewport or overlay opacity — a first attempt at
-            this used a sharp crop with only a CSS scrim for contrast, and at
-            wide viewports "Omega-3 Fish Oil" and its claim bullets were
-            still clearly readable, which is exactly the kind of implied
-            product claim this project does not ship. With the source image
-            itself illegible, this overlay only has to do the ordinary job
-            of a hero scrim: contrast for the headline, and a static color
-            rather than something that shifts with image content. */}
+        {/* hero-products.webp carries a light, uniform soft-focus (sharp
+            .blur(5) on the source crop, before object-fit:cover's own
+            upscaling softens it further on screen) — just enough that
+            packaging text is never legible, while bottle shapes, colors and
+            the surrounding greenery stay clearly recognizable as premium
+            product photography. Two earlier attempts got this wrong in
+            opposite directions: a sharp crop with only a CSS scrim left
+            "Omega-3 Fish Oil" and its claim bullets clearly readable at wide
+            viewports (exactly the kind of implied product claim this
+            project does not ship); a heavy .blur(14) then overcorrected
+            into the whole image reading as an indistinct wash, which is
+            what this comment and asset replace. This overlay does the
+            ordinary job of a hero scrim — contrast for the headline — not
+            text-hiding duty. */}
         <div className="absolute inset-0 bg-gradient-to-r from-brand-900 via-brand-900/75 to-brand-900/35 sm:via-brand-900/60 sm:to-brand-900/25" />
         <div className="absolute inset-0 bg-gradient-to-t from-brand-900/35 via-transparent to-transparent" />
       </div>
