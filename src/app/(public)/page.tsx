@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
+import heroProducts from "./_assets/hero-products.webp";
 import { ProductGrid } from "@/components/public/product-card";
 import { ContentLinkSection } from "@/components/public/content-link-section";
 import { CategoryChip, EmptyState, Skeleton } from "@/components/public/ui";
@@ -55,17 +57,48 @@ export default function HomePage() {
   );
 }
 
+// hero-products.webp (src/app/(public)/_assets/) is a cropped, optimized
+// still of real, generic wellness-product photography — bottles, citrus,
+// turmeric, greenery — used purely as decorative background texture. It was
+// cropped from a larger reference mockup that also contained a fabricated
+// review count, a fabricated discount badge, and cart/account icons this
+// site has no equivalent of (no accounts, no cart — /go/[slug] is the only
+// purchase path, and it leaves this site entirely). None of that survived
+// the crop. Nothing here claims these specific bottles are real listings;
+// the actual homepage catalogue renders below in DiscoverySections, from
+// real database rows only.
 function Hero() {
   return (
     <section className="relative overflow-hidden border-b border-line bg-brand-900">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-32 -top-32 size-[520px] rounded-full bg-brand-700/40 blur-3xl"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-40 -left-24 size-[420px] rounded-full bg-brand-500/20 blur-3xl"
-      />
+      <div className="absolute inset-0">
+        {/* No placeholder="blur": Next.js renders that as an inline
+            data:image/svg+xml blur-up placeholder, which the CSP's
+            img-src 'self' https: (Step 7.2, deliberately scoped — no data:)
+            correctly refuses. Loosening that policy for a purely cosmetic
+            loading transition isn't worth it, especially given `priority`
+            below already loads this image eagerly rather than lazily. */}
+        <Image
+          src={heroProducts}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+        {/* hero-products.webp is pre-blurred at the file level (see the
+            asset comment above) specifically so no packaging text is ever
+            legible, at any viewport or overlay opacity — a first attempt at
+            this used a sharp crop with only a CSS scrim for contrast, and at
+            wide viewports "Omega-3 Fish Oil" and its claim bullets were
+            still clearly readable, which is exactly the kind of implied
+            product claim this project does not ship. With the source image
+            itself illegible, this overlay only has to do the ordinary job
+            of a hero scrim: contrast for the headline, and a static color
+            rather than something that shifts with image content. */}
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-900 via-brand-900/75 to-brand-900/35 sm:via-brand-900/60 sm:to-brand-900/25" />
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-900/35 via-transparent to-transparent" />
+      </div>
+
       <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
         <div className="max-w-2xl">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-200">Health &amp; Wellness</p>
