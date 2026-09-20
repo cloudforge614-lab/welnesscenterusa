@@ -61,9 +61,12 @@ export async function generateMetadata(props: PageProps<"/categories/[slug]">): 
   // unbounded number of ?page=N duplicates into the index, so those are
   // noindex'd while staying followable. The count comes from the same cached
   // query the page body uses, so this costs no extra round trip.
-  const { pageCount } = await getCategoryProducts(category.id, page);
+  const { pageCount, totalCount } = await getCategoryProducts(category.id, page);
   const beyondLastPage = page > 1 && page > pageCount;
-  const indexable = (seo?.robotsIndex ?? true) && (seo?.robotsFollow ?? true) && !beyondLastPage;
+  // A category with nothing in it yet is a real page (it exists, and is listed
+  // on /categories) but a thin one, so it is not indexed until it has products.
+  const empty = totalCount === 0;
+  const indexable = (seo?.robotsIndex ?? true) && (seo?.robotsFollow ?? true) && !beyondLastPage && !empty;
 
   return {
     title,
@@ -144,7 +147,7 @@ export default async function CategoryPage(props: PageProps<"/categories/[slug]"
 
       <div className="mt-10">
         {items.length > 0 ? (
-          <ProductGrid products={items} />
+          <ProductGrid products={items} ctaLocation="products-card" />
         ) : (
           <EmptyState
             title="No products in this category yet"

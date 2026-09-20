@@ -19,6 +19,13 @@ export type SearchResult = {
   excerpt: string | null;
   publishedAt: string | null;
   imagePath: string | null;
+  /**
+   * True for a product that has no detail page yet (no published content) but
+   * does have an affiliate link: the result then goes through /go/[slug] (a
+   * plain <a>, never next/link, so nothing prefetches and records a click)
+   * instead of a /products/[slug] page that would 404.
+   */
+  viaGo?: boolean;
 };
 
 export const SEARCH_TYPE_LABEL: Record<SearchResultType, string> = {

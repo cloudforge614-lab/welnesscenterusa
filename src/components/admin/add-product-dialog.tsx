@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { createProduct, type FieldErrors } from "@/app/admin/actions";
 import { AFFILIATE_URL_MAX, PRODUCT_NAME_MAX, validateAffiliateUrl, validateProductName } from "@/lib/products/validation";
 import { ALLOWED_IMAGE_ACCEPT, ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES } from "@/lib/products/image-constants";
+import { CategoryCheckboxes, type CategoryOption } from "./category-picker";
 import { Modal } from "./modal";
 import { buttonStyles, cx, inputStyles, Spinner } from "./ui";
 
@@ -16,7 +17,15 @@ function validateImageFile(file: File | undefined): string | undefined {
   return undefined;
 }
 
-export function AddProductButton({ label = "Add product", className }: { label?: string; className?: string }) {
+export function AddProductButton({
+  label = "Add product",
+  className,
+  categories = [],
+}: {
+  label?: string;
+  className?: string;
+  categories?: CategoryOption[];
+}) {
   const [open, setOpen] = useState(false);
   // Remounting the form on each open resets fields and errors without extra state.
   const [formKey, setFormKey] = useState(0);
@@ -36,12 +45,12 @@ export function AddProductButton({ label = "Add product", className }: { label?:
         </svg>
         {label}
       </button>
-      <AddProductDialog key={formKey} open={open} onClose={() => setOpen(false)} />
+      <AddProductDialog key={formKey} open={open} onClose={() => setOpen(false)} categories={categories} />
     </>
   );
 }
 
-function AddProductDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+function AddProductDialog({ open, onClose, categories }: { open: boolean; onClose: () => void; categories: CategoryOption[] }) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -125,6 +134,8 @@ function AddProductDialog({ open, onClose }: { open: boolean; onClose: () => voi
           error={errors.affiliateUrl}
           hint="Visitors reach this link only through your tracked “View official offer” button."
         />
+
+        {categories.length > 0 && <CategoryCheckboxes categories={categories} name="categoryIds" legend="Categories (optional)" disabled={pending} />}
 
         {formError && (
           <p role="alert" className="rounded-lg bg-rose-soft px-3.5 py-2.5 text-sm text-rose-ink">

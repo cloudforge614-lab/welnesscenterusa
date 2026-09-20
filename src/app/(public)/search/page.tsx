@@ -133,16 +133,26 @@ async function SearchResults({ query }: { query: string }) {
     searchPublicComparisons(query),
   ]);
 
-  const products: SearchResult[] = productResult.items.slice(0, SEARCH_RESULT_LIMIT).map((p) => ({
-    type: "product",
-    id: p.id,
-    title: p.name,
-    slug: p.slug,
-    url: productResultUrl(p.slug),
-    excerpt: p.excerpt,
-    publishedAt: null,
-    imagePath: p.imagePath,
-  }));
+  // The directory lists every active product, but a search hit must lead
+  // somewhere real: its detail page when it has one, otherwise the tracked
+  // /go redirect; a product with neither has nothing to link to and is skipped.
+  const products: SearchResult[] = productResult.items
+    .filter((p) => p.hasDetailPage !== false || p.hasAffiliateLink)
+    .slice(0, SEARCH_RESULT_LIMIT)
+    .map((p) => {
+      const viaGo = p.hasDetailPage === false;
+      return {
+        type: "product" as const,
+        id: p.id,
+        title: p.name,
+        slug: p.slug,
+        url: viaGo ? `/go/${p.slug}?cta=search-card` : productResultUrl(p.slug),
+        excerpt: p.excerpt,
+        publishedAt: null,
+        imagePath: p.imagePath,
+        viaGo,
+      };
+    });
   const reviewResults: SearchResult[] = reviews.map((r) => ({
     type: "review",
     id: r.id,

@@ -6,7 +6,16 @@ import { CategoryChip, PlaceholderImage } from "./ui";
 
 const CARD_IMAGE_SIZES = "(min-width: 1280px) 280px, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw";
 
-export function ProductCard({ product, priorityImage = false }: { product: PublicProductSummary; priorityImage?: boolean }) {
+export function ProductCard({
+  product,
+  priorityImage = false,
+  ctaLocation = "homepage-card",
+}: {
+  product: PublicProductSummary;
+  priorityImage?: boolean;
+  /** Recorded as the click's cta_location by /go/[slug]. */
+  ctaLocation?: string;
+}) {
   // A homepage teaser can exist before its detail page does (that page still
   // requires published content). Never link to a page that would 404.
   const hasDetailPage = product.hasDetailPage !== false;
@@ -66,7 +75,7 @@ export function ProductCard({ product, priorityImage = false }: { product: Publi
                   internal /go path only; the destination URL is resolved
                   server-side and never reaches this HTML. */}
               <a
-                href={`/go/${product.slug}?cta=homepage-card`}
+                href={`/go/${product.slug}?cta=${ctaLocation}`}
                 rel="sponsored nofollow noopener"
                 aria-label={`Visit official site for ${product.name} (affiliate link, leaves Wellness Center USA)`}
                 className={cx(
@@ -87,11 +96,11 @@ export function ProductCard({ product, priorityImage = false }: { product: Publi
   );
 }
 
-export function ProductGrid({ products }: { products: PublicProductSummary[] }) {
+export function ProductGrid({ products, ctaLocation }: { products: PublicProductSummary[]; ctaLocation?: string }) {
   return (
     <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
+        <ProductCard key={product.id} product={product} ctaLocation={ctaLocation} />
       ))}
     </ul>
   );

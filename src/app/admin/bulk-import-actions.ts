@@ -2,16 +2,19 @@
 
 import { assertOwner, NotOwnerError } from "@/lib/auth/owner";
 import { refreshAdmin } from "@/lib/admin/refresh";
+import { resolveCategories } from "@/lib/bulk-import/categories";
 import { CSV_MAX_BYTES } from "@/lib/bulk-import/csv";
 import { claimedTypeFromName, sniffImageType, type SniffedType } from "@/lib/bulk-import/images";
 import {
   buildPreview,
+  categoryErrors,
   emptyPreview,
   MAX_BULK_UPLOAD_BYTES,
   parseBulkRows,
   type ManifestImage,
   type Preview,
 } from "@/lib/bulk-import/plan";
+import { listCategories } from "@/lib/products/categories";
 import { createOwnerProduct } from "@/lib/products/create-owner-product";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES } from "@/lib/products/image-constants";
 
@@ -75,7 +78,11 @@ export async function validateBulkImport(input: { csvText: unknown; images: unkn
       }
       for (const row of data ?? []) existing.add(row.slug);
     }
-    return { ok: true, preview: buildPreview(batch, images, existing) };
+    // The category catalogue is read only when the CSV actually has a category
+    // column, and only to MATCH against — an unknown name is a row error, a
+    // category is never created here.
+    const catalog = batch.hasCategoryColumn ? await listCategories(supabase) : [];
+    return { ok: true, preview: buildPreview(batch, images, existing, catalog) };
   } catch (error) {
     if (error instanceof NotOwnerError) return { ok: false, error: "Your session doesn't have owner access. Sign in again." };
     console.error("[bulk import] validate failed", error);
@@ -114,6 +121,17 @@ export async function importBulkRow(formData: FormData): Promise<ImportRowResult
     name = row.name;
     if (row.errors.length > 0) return { ok: false, line, name, error: row.errors[0] };
 
+    // Re-resolved on the server from the database at import time (never from
+    // anything the browser sent), so a category renamed or removed since the
+    // preview is caught here, before anything is created.
+    let categoryIds: string[] = [];
+    if (row.categoryNames.length > 0) {
+      const catalog = await listCategories(supabase);
+      const problems = categoryErrors(row, catalog);
+      if (problems.length > 0) return { ok: false, line, name, error: problems[0] };
+      categoryIds = resolveCategories(row.categoryNames, catalog).ids;
+    }
+
     if (row.base) {
       const { data, error } = await supabase.from("products").select("id").is("deleted_at", null).eq("slug", row.base).limit(1);
       if (error) {
@@ -149,8 +167,10 @@ export async function importBulkRow(formData: FormData): Promise<ImportRowResult
       name: row.name,
       affiliateUrl: row.affiliateUrl,
       image: new File([bytes as BlobPart], row.imageFilename, { type: sniffed }),
+      categoryIds,
     });
     if (!result.ok) {
+      if (result.stage === "category") return { ok: false, line, name, error: result.message };
       if (result.stage === "image") return { ok: false, line, name, error: `Image upload failed — the product was not kept. ${result.message}` };
       const msg = result.dbError.message;
       if (msg.includes("Only the owner") || result.dbError.code === "42501") return { ok: false, line, name, error: "Your account doesn't have owner access." };

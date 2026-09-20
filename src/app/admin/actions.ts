@@ -5,6 +5,7 @@ import { assertOwner, NotOwnerError } from "@/lib/auth/owner";
 import { isUuid } from "@/lib/products/queries";
 import { validateAffiliateUrl, validateProductName } from "@/lib/products/validation";
 import { createOwnerProduct } from "@/lib/products/create-owner-product";
+import { cleanCategoryIds, setProductCategories } from "@/lib/products/categories";
 import { refreshAdmin } from "@/lib/admin/refresh";
 import { createClient } from "@/lib/supabase/server";
 
@@ -63,6 +64,7 @@ export async function createProduct(formData: FormData) {
     }
 
     const { supabase } = await assertOwner();
+    const categoryIds = cleanCategoryIds(formData.getAll("categoryIds"));
     // One shared implementation (src/lib/products/create-owner-product.ts):
     // create_product() RPC (still inserts as 'new', unchanged — it is the one
     // RPC every product-creating caller shares), required image upload with
@@ -71,9 +73,11 @@ export async function createProduct(formData: FormData) {
       name: name.value,
       affiliateUrl: url.value,
       image: file as File,
+      categoryIds,
     });
     if (!result.ok) {
       if (result.stage === "create") return describeDbError(result.dbError);
+      if (result.stage === "category") return fail(result.message);
       return fail(result.message, { image: result.message });
     }
 
@@ -103,6 +107,32 @@ export async function renameProduct(input: { id: unknown; name: unknown }) {
 
     refreshAdmin();
     return { ok: true, message: "Name updated" };
+  });
+}
+
+// Owner category management: makes `categoryIds` the product's exact category
+// set. Existing many-to-many (product_categories); RLS is the boundary. No
+// affiliate data is read or returned.
+export async function setProductCategoriesAction(input: { id: unknown; categoryIds: unknown }) {
+  return withOwner(async () => {
+    const id = typeof input?.id === "string" ? input.id : "";
+    if (!isUuid(id)) return fail("That product doesn't exist.");
+    const raw = Array.isArray(input?.categoryIds) ? input.categoryIds : [];
+    const categoryIds = cleanCategoryIds(raw);
+    if (categoryIds.length !== new Set(raw).size) return fail("One of those categories isn't valid.");
+
+    const { supabase } = await assertOwner();
+    const { data: product, error: productError } = await supabase.from("products").select("id").eq("id", id).is("deleted_at", null).maybeSingle();
+    if (productError) return describeDbError(productError);
+    if (!product) return fail("That product doesn't exist.");
+
+    const result = await setProductCategories(supabase, id, categoryIds);
+    if (!result.ok) {
+      if (result.code === "23503") return fail("One of those categories no longer exists. Refresh and try again.");
+      return describeDbError({ code: result.code, message: "category update failed" });
+    }
+    refreshAdmin();
+    return { ok: true, message: categoryIds.length === 0 ? "Categories cleared" : "Categories saved" };
   });
 }
 

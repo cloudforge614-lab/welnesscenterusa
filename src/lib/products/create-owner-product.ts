@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { createClient } from "@/lib/supabase/server";
+import { setProductCategories } from "./categories";
 import { uploadProductImageFile } from "./image-upload";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
@@ -8,7 +9,8 @@ type Supabase = Awaited<ReturnType<typeof createClient>>;
 export type CreateOwnerProductResult =
   | { ok: true; product: { id: string; name: string; slug: string }; activated: boolean }
   | { ok: false; stage: "create"; dbError: { code?: string; message: string } }
-  | { ok: false; stage: "image"; message: string };
+  | { ok: false; stage: "image"; message: string }
+  | { ok: false; stage: "category"; message: string };
 
 /**
  * The single implementation of "Owner creates a live product from a name, an
@@ -22,7 +24,8 @@ export type CreateOwnerProductResult =
  *     product as 'new' and its affiliate_links row in one database transaction.
  *  2. uploadProductImageFile() — same validation, same products/<id>/<uuid>.ext
  *     path scoping, and same primary-image rule as the Agency image manager.
- *  3. Activation — the Owner-minimal-creation behaviour: a second explicit
+ *  3. Categories (optional) - the existing product_categories many-to-many.
+ *  4. Activation — the Owner-minimal-creation behaviour: a second explicit
  *     write, only after the image exists.
  *
  * If the image fails, the product is soft-deleted (products has no DELETE
@@ -34,7 +37,7 @@ export type CreateOwnerProductResult =
  */
 export async function createOwnerProduct(
   supabase: Supabase,
-  input: { name: string; affiliateUrl: string; image: File },
+  input: { name: string; affiliateUrl: string; image: File; categoryIds?: string[] },
 ): Promise<CreateOwnerProductResult> {
   const { data, error } = await supabase.rpc("create_product", {
     p_name: input.name,
@@ -46,6 +49,16 @@ export async function createOwnerProduct(
   if (!upload.ok) {
     await supabase.from("products").update({ deleted_at: new Date().toISOString() }).eq("id", data.id);
     return { ok: false, stage: "image", message: upload.error };
+  }
+
+  // Categories are assigned BEFORE activation, so a product never goes live
+  // half-finished. A failure rolls the product back exactly like an image failure.
+  if (input.categoryIds && input.categoryIds.length > 0) {
+    const assigned = await setProductCategories(supabase, data.id, input.categoryIds);
+    if (!assigned.ok) {
+      await supabase.from("products").update({ deleted_at: new Date().toISOString() }).eq("id", data.id);
+      return { ok: false, stage: "category", message: "Couldn't assign the categories — the product was not kept." };
+    }
   }
 
   const { error: activateError } = await supabase.from("products").update({ status: "active" }).eq("id", data.id);

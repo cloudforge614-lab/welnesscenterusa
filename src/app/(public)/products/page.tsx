@@ -25,11 +25,18 @@ export async function generateMetadata(props: PageProps<"/products">): Promise<M
   const canonical = page > 1 ? `${siteUrl}/products?page=${page}` : `${siteUrl}/products`;
   const title = page > 1 ? `Products — Page ${page}` : "Products";
 
+  // A page past the end of the list is a real 200 but has nothing on it, and
+  // an unbounded number of ?page=N URLs must not enter the index. Same rule the
+  // category pages already apply; the count comes from the same cached query
+  // the page body uses, so it costs no extra round trip.
+  const { pageCount } = await listPublicProducts(page);
+  const beyondLastPage = page > 1 && page > pageCount;
+
   return {
     title,
     description: "Browse health and wellness products researched and reviewed by Wellness Center USA.",
     alternates: { canonical },
-    robots: { index: true, follow: true },
+    robots: { index: !beyondLastPage, follow: true },
     openGraph: {
       title: `${title} · Wellness Center USA`,
       description: "Browse health and wellness products researched and reviewed by Wellness Center USA.",
@@ -83,7 +90,7 @@ async function ProductResults({ page }: { page: number }) {
     <>
       <div className="mt-10">
         {items.length > 0 ? (
-          <ProductGrid products={items} />
+          <ProductGrid products={items} ctaLocation="products-card" />
         ) : page > 1 ? (
           <EmptyState title="No more products" description="You've reached the end of the list." />
         ) : (

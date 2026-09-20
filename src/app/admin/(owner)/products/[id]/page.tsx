@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ProductCategoryEditor } from "@/components/admin/category-picker";
 import { EditAffiliateUrlForm, EditNameForm, ProductStatusControls } from "@/components/admin/product-controls";
 import { Badge, Card, formatDate, formatDateTime, formatNumber } from "@/components/admin/ui";
+import { listCategories } from "@/lib/products/categories";
 import { getProduct, getProductClickStats } from "@/lib/products/queries";
+import { createClient } from "@/lib/supabase/server";
 import { contentMeta, isLive, STATUS_META } from "@/lib/products/status";
 
 export async function generateMetadata(props: PageProps<"/admin/products/[id]">) {
@@ -16,7 +19,7 @@ export default async function ProductPage(props: PageProps<"/admin/products/[id]
   const product = await getProduct(id);
   if (!product) notFound();
 
-  const clicks = await getProductClickStats(product.id);
+  const [clicks, categories] = await Promise.all([getProductClickStats(product.id), createClient().then(listCategories)]);
   const status = STATUS_META[product.status];
   const content = contentMeta(product.contentStatus);
   const live = isLive(product.status, product.contentStatus);
@@ -64,6 +67,18 @@ export default async function ProductPage(props: PageProps<"/admin/products/[id]
             </div>
             <div className="p-5">
               <EditAffiliateUrlForm id={product.id} url={product.activeUrl} />
+            </div>
+          </Card>
+
+          <Card>
+            <div className="border-b border-line px-5 py-4">
+              <h2 className="font-display text-xl text-ink">Categories</h2>
+              <p className="text-sm text-ink-muted">
+                Where this product is listed on the public site. It always stays in All Products, whatever you choose here.
+              </p>
+            </div>
+            <div className="p-5">
+              <ProductCategoryEditor productId={product.id} categories={categories} assignedIds={product.categoryIds} />
             </div>
           </Card>
 
@@ -164,7 +179,7 @@ function referrerLabel(referrer: string | null, utmSource: string | null) {
 function VisibilityExplainer({ status, contentPublished }: { status: string; contentPublished: boolean }) {
   let message: string | null = null;
   if (status === "active" && !contentPublished) {
-    message = "Active. It's showing as a card on the homepage now — its own product page goes live once the agency publishes content.";
+    message = "Active. It's listed on the homepage, in All Products and in its categories now — its own product page goes live once the agency publishes content.";
   } else if (status === "new" && contentPublished) {
     message = "The agency has published content. Activate the product to put it live on the site.";
   } else if (status === "new") {

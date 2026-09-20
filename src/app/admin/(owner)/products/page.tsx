@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { AddProductButton } from "@/components/admin/add-product-dialog";
 import { ProductTable } from "@/components/admin/product-table";
 import { buttonStyles, Card, cx, EmptyState, formatNumber, inputStyles, PageHeader } from "@/components/admin/ui";
+import { listCategories } from "@/lib/products/categories";
 import { listProducts, PAGE_SIZE, sanitizeSearch } from "@/lib/products/queries";
+import { createClient } from "@/lib/supabase/server";
 import { parseStatusFilter, STATUS_FILTERS, type StatusFilter } from "@/lib/products/status";
 
 export const metadata = { title: "Products" };
@@ -25,7 +27,10 @@ export default async function ProductsPage(props: PageProps<"/admin/products">) 
   const requestedPage = Number.parseInt(String(searchParams.page ?? "1"), 10);
   const page = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 10_000) : 1;
 
-  const { items, totalCount, pageCount, outOfRange } = await listProducts({ q, filter: status, page });
+  const [{ items, totalCount, pageCount, outOfRange }, categories] = await Promise.all([
+    listProducts({ q, filter: status, page }),
+    createClient().then(listCategories),
+  ]);
   if (outOfRange && totalCount > 0) redirect(hrefFor({ q, status, page: pageCount }));
   const firstRow = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const lastRow = Math.min(page * PAGE_SIZE, totalCount);
@@ -41,7 +46,7 @@ export default async function ProductsPage(props: PageProps<"/admin/products">) 
             <Link href="/admin/products/bulk-import" className={buttonStyles.secondary}>
               Bulk import
             </Link>
-            <AddProductButton />
+            <AddProductButton categories={categories} />
           </div>
         }
       />

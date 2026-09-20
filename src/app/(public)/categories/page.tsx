@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CategoryChip, EmptyState } from "@/components/public/ui";
 import { siteUrl } from "@/lib/env";
 import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
-import { getPublicCategoriesWithProducts } from "@/lib/products/public-queries";
+import { getPublicCategories } from "@/lib/products/public-queries";
 
 // Publicly cacheable. Editorial actions invalidate this immediately through
 // the cache tags declared on the queries below, so this TTL is only a
@@ -33,7 +33,9 @@ export const metadata: Metadata = {
 };
 
 export default async function CategoriesPage() {
-  const categories = await getPublicCategoriesWithProducts();
+  // Every category from the database is listed — one with no products yet
+  // still exists — with a LIVE count of its active products.
+  const categories = await getPublicCategories();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
@@ -51,9 +53,11 @@ export default async function CategoriesPage() {
                   href={`/categories/${category.slug}`}
                   className="flex h-full flex-col rounded-2xl border border-line bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-pop"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <h2 className="font-display text-lg text-ink">{category.name}</h2>
-                    <CategoryChip>{category.productCount}</CategoryChip>
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="font-display text-lg text-ink [overflow-wrap:anywhere]">{category.name}</h2>
+                    <CategoryChip>
+                      {category.productCount} {category.productCount === 1 ? "product" : "products"}
+                    </CategoryChip>
                   </div>
                   {category.description && (
                     <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink-muted">{category.description}</p>
@@ -66,7 +70,7 @@ export default async function CategoriesPage() {
         ) : (
           <EmptyState
             title="No categories yet"
-            description="Categories appear here once products have been organized into them."
+            description="Categories will appear here as they are set up."
             action={
               <Link
                 href="/products"

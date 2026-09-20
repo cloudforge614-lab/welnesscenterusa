@@ -958,6 +958,32 @@ export type Database = {
           slug: string
         }[]
       }
+      get_public_categories: {
+        Args: never
+        Returns: {
+          description: string
+          id: string
+          name: string
+          product_count: number
+          slug: string
+        }[]
+      }
+      get_public_products: {
+        Args: { p_category_id?: string; p_limit?: number; p_offset?: number; p_search?: string }
+        Returns: {
+          categories: Json
+          created_at: string
+          has_affiliate_link: boolean
+          has_published_content: boolean
+          id: string
+          image_alt: string
+          image_path: string
+          name: string
+          overview: string
+          slug: string
+          total_count: number
+        }[]
+      }
       has_any_role: {
         Args: { roles: Database["public"]["Enums"]["user_role"][] }
         Returns: boolean

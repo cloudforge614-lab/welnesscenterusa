@@ -173,6 +173,7 @@ export type ProductDetail = {
   updatedAt: string;
   activeUrl: string | null;
   linkHistory: { id: string; url: string; isActive: boolean; createdAt: string }[];
+  categoryIds: string[];
 };
 
 // cache(): generateMetadata and the page both ask for the same product in one request.
@@ -202,11 +203,14 @@ export const getProduct = cache(async (id: string): Promise<ProductDetail | null
     "affiliate links",
   ) ?? [];
 
+  const assigned = unwrap(await supabase.from("product_categories").select("category_id").eq("product_id", id), "product categories") ?? [];
+
   return {
     id: product.id,
     name: product.name,
     slug: product.slug,
     status: product.status,
+    categoryIds: assigned.map((r) => r.category_id),
     contentStatus: product.product_content?.status ?? null,
     createdAt: product.created_at,
     updatedAt: product.updated_at,

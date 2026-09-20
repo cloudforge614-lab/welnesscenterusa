@@ -11,10 +11,30 @@ const TYPE_BADGE_TONE: Record<SearchResult["type"], string> = {
   comparison: "bg-rose-soft text-rose-ink",
 };
 
+const LINK_CLASS = "block rounded-2xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100";
+
 export function SearchResultCard({ result }: { result: SearchResult }) {
+  const inner = <SearchResultBody result={result} />;
   return (
     <li className="group overflow-hidden rounded-2xl border border-line bg-surface shadow-card transition hover:border-line-strong hover:shadow-pop">
-      <Link href={result.url} className="block rounded-2xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100">
+      {result.viaGo ? (
+        // Plain <a>: /go/[slug] records a click and 302s off-site; next/link would
+        // prefetch it and count a click nobody made.
+        <a href={result.url} rel="sponsored nofollow noopener" className={LINK_CLASS}>
+          {inner}
+        </a>
+      ) : (
+        <Link href={result.url} className={LINK_CLASS}>
+          {inner}
+        </Link>
+      )}
+    </li>
+  );
+}
+
+function SearchResultBody({ result }: { result: SearchResult }) {
+  return (
+    <>
         <div className="aspect-[4/3] w-full overflow-hidden border-b border-line bg-white">
           {result.imagePath ? (
             // eslint-disable-next-line @next/next/no-img-element -- arbitrary external host, see src/lib/products/image.ts
@@ -34,7 +54,6 @@ export function SearchResultCard({ result }: { result: SearchResult }) {
           {result.excerpt && <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-ink-muted">{result.excerpt}</p>}
           {result.publishedAt && <p className="mt-2 text-xs text-ink-subtle">{formatDate(result.publishedAt)}</p>}
         </div>
-      </Link>
-    </li>
+    </>
   );
 }

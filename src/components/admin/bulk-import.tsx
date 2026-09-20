@@ -268,12 +268,13 @@ export function BulkImport() {
         <Card>
           <div className="border-b border-line p-5 sm:p-6">
             <h2 className="font-display text-xl text-ink">Import preview</h2>
-            <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
               <Stat label="Products found" value={preview.summary.found} />
               <Stat label="Images matched" value={preview.summary.imagesMatched} />
               <Stat label="Missing images" value={preview.summary.missingImages} bad />
               <Stat label="Invalid URLs" value={preview.summary.invalidUrls} bad />
               <Stat label="Duplicate products" value={preview.summary.duplicates} bad />
+              {preview.hasCategoryColumn && <Stat label="Invalid categories" value={preview.summary.invalidCategories} bad />}
               <Stat label="Validation errors" value={preview.summary.errorRows} bad />
             </dl>
             {preview.summary.unusedImages > 0 && (
@@ -294,6 +295,7 @@ export function BulkImport() {
                 <tr>
                   <th className="px-4 py-3 font-medium">Product Name</th>
                   <th className="px-4 py-3 font-medium">Image</th>
+                  {preview.hasCategoryColumn && <th className="px-4 py-3 font-medium">Categories</th>}
                   <th className="px-4 py-3 font-medium">Affiliate URL</th>
                   <th className="px-4 py-3 font-medium">Validation</th>
                 </tr>
@@ -309,6 +311,9 @@ export function BulkImport() {
                       <Badge tone={row.image.status === "matched" ? "brand" : "rose"}>{row.image.label}</Badge>
                       <div className="mt-1 break-all text-xs text-ink-subtle">{row.imageFilename}</div>
                     </td>
+                    {preview.hasCategoryColumn && (
+                      <td className="px-4 py-3 text-ink-muted">{row.categories.length > 0 ? row.categories.join(", ") : "—"}</td>
+                    )}
                     <td className="px-4 py-3">
                       <Badge tone={row.url.status === "valid" ? "brand" : "rose"}>{row.url.label}</Badge>
                     </td>

@@ -24,16 +24,6 @@ import { TAGS } from "@/lib/cache/tags";
 // eligible itself; (2) defense in depth: this module should be correct on
 // its own, not merely because a policy elsewhere happens to agree.
 
-const PRODUCT_SUMMARY_SELECT = `
-  id,
-  name,
-  slug,
-  created_at,
-  product_content!inner(overview, status),
-  product_images(storage_path, alt_text, is_primary, position),
-  product_categories(categories(id, name, slug))
-`;
-
 export type PublicProductSummary = {
   id: string;
   name: string;
@@ -124,59 +114,41 @@ type ProductQueryOptions = {
 };
 
 // Shared by the plain listing, category pages, and search — all three are
-// "products passing the two-gate rule, optionally narrowed by category or
-// name/slug substring, paginated" and previously would have triplicated the
-// same pagination + PGRST103-past-the-end handling three times over.
+// "the public product directory, optionally narrowed by category or name/slug
+// substring, paginated in the database".
+//
+// DIRECTORY RULE: active + not deleted. Published Agency content is NOT
+// required to be listed (an Owner-added product must appear the moment it is
+// active); it only decides whether the product has a detail page
+// (hasDetailPage) — /products/[slug] keeps its own published-content gate.
+// This reads through get_public_products() (migration 0025), a narrow
+// SECURITY DEFINER function, for the same reason the homepage reads through
+// get_homepage_products(): product_images' public policy keys on published
+// content, so a plain select could never return a content-less product's image.
+// It returns only safe display fields and two booleans — never a URL.
 async function queryPublicProducts(options: ProductQueryOptions): Promise<PublicProductList> {
   const supabase = createPublicClient();
   const safePage = Number.isFinite(options.page) && options.page > 0 ? Math.floor(options.page) : 1;
   const from = (safePage - 1) * PUBLIC_PAGE_SIZE;
   const search = options.search ? sanitizePublicSearch(options.search) : "";
+  const filters = { p_category_id: options.categoryId, p_search: search || undefined };
 
-  const buildQuery = (columns: string, head: boolean) => {
-    // Filtering by category needs product_categories as an INNER join so the
-    // .eq() on its category_id actually narrows the result set (a LEFT join,
-    // the default, would just leave the column null-filterable and match
-    // every product). category chips still come back the same way either way.
-    const select = options.categoryId
-      ? columns.replace("product_categories(", "product_categories!inner(category_id, ")
-      : columns;
-    let query = supabase
-      .from("products")
-      .select(select, { count: "exact", head })
-      .eq("status", "active")
-      .is("deleted_at", null)
-      .eq("product_content.status", "published");
-    if (options.categoryId) query = query.eq("product_categories.category_id", options.categoryId);
-    if (search) query = query.or(`name.ilike.%${search}%,slug.ilike.%${search}%`);
-    return query;
-  };
+  const { data, error } = await supabase.rpc("get_public_products", { p_limit: PUBLIC_PAGE_SIZE, p_offset: from, ...filters });
+  if (error) throw new Error(`Failed to load products: ${error.message}`);
+  let rows = (data ?? []) as DirectoryRow[];
 
-  const result = await buildQuery(PRODUCT_SUMMARY_SELECT, false)
-    .order("created_at", { ascending: false })
-    .range(from, from + PUBLIC_PAGE_SIZE - 1);
-
-  // A page past the end (e.g. a stale link after a product goes inactive)
-  // comes back as an error, not an empty array — treat it as zero results
-  // rather than surfacing a 500.
-  if (result.error) {
-    if (result.error.code === "PGRST103") {
-      // Must include the product_content (and, when filtering by category,
-      // product_categories) embeds even though only the count is needed:
-      // buildQuery's dot-path filters on those embedded tables only resolve
-      // if the tables are named in `select` — bare "id" here would 400 again.
-      const countResult = await buildQuery("id, product_content!inner(status), product_categories(category_id)", true);
-      if (countResult.error) throw new Error(`Failed to count products: ${countResult.error.message}`);
-      const totalCount = countResult.count ?? 0;
-      return { items: [], totalCount, pageCount: Math.max(1, Math.ceil(totalCount / PUBLIC_PAGE_SIZE)) };
-    }
-    throw new Error(`Failed to load products: ${result.error.message}`);
+  let totalCount = Number(rows[0]?.total_count ?? 0);
+  if (rows.length === 0 && safePage > 1) {
+    // A page past the end has no rows, so no total_count either. Ask for the
+    // first row of the set purely to learn the size (and so the page count).
+    const { data: first, error: firstError } = await supabase.rpc("get_public_products", { p_limit: 1, p_offset: 0, ...filters });
+    if (firstError) throw new Error(`Failed to count products: ${firstError.message}`);
+    rows = [];
+    totalCount = Number(((first ?? []) as DirectoryRow[])[0]?.total_count ?? 0);
   }
 
-  const rows = (result.data ?? []) as unknown as SummaryRow[];
-  const totalCount = result.count ?? 0;
   return {
-    items: rows.map(summaryFromRow),
+    items: rows.map(summaryFromDirectoryRow),
     totalCount,
     pageCount: Math.max(1, Math.ceil(totalCount / PUBLIC_PAGE_SIZE)),
   };
@@ -412,36 +384,20 @@ export type PublicCategory = {
 
 export type PublicCategoryWithCount = PublicCategory & { productCount: number };
 
-// Used by /categories: only categories that currently have at least one
-// eligible product are listed, so every link on that page leads somewhere
-// with real content rather than a guaranteed-empty page.
-export const getPublicCategoriesWithProducts = cachedPublic("products:getPublicCategoriesWithProducts", [TAGS.categories, TAGS.products], TTL.feed, async (): Promise<PublicCategoryWithCount[]> => {
+// Every category, with a LIVE count of active, non-deleted products (migration
+// 0025's get_public_categories()). A category is a taxonomy entity: it exists,
+// and is listed, whether or not it currently has products.
+export const getPublicCategories = cachedPublic("products:getPublicCategories", [TAGS.categories, TAGS.products], TTL.feed, async (): Promise<PublicCategoryWithCount[]> => {
   const supabase = createPublicClient();
+  const { data, error } = await supabase.rpc("get_public_categories");
+  if (error) throw new Error(`Failed to load categories: ${error.message}`);
+  return (data ?? []).map((c) => ({ id: c.id, name: c.name, slug: c.slug, description: c.description, productCount: Number(c.product_count) }));
+});
 
-  const { data: categories, error: categoriesError } = await supabase
-    .from("categories")
-    .select("id, name, slug, description")
-    .order("name", { ascending: true });
-  if (categoriesError) throw new Error(`Failed to load categories: ${categoriesError.message}`);
-  if (!categories || categories.length === 0) return [];
-
-  // One query for all category/product pairings, then tally counts in JS —
-  // categories are a small, bounded set, so this is cheaper and simpler than
-  // one count query per category.
-  const { data: pairings, error: pairingsError } = await supabase
-    .from("product_categories")
-    .select("category_id, products!inner(id, status, deleted_at, product_content!inner(status))")
-    .eq("products.status", "active")
-    .is("products.deleted_at", null)
-    .eq("products.product_content.status", "published");
-  if (pairingsError) throw new Error(`Failed to load category product counts: ${pairingsError.message}`);
-
-  const counts = new Map<string, number>();
-  for (const row of pairings ?? []) counts.set(row.category_id, (counts.get(row.category_id) ?? 0) + 1);
-
-  return categories
-    .map((c) => ({ ...c, productCount: counts.get(c.id) ?? 0 }))
-    .filter((c) => c.productCount > 0);
+// The homepage strip and the sitemap only want categories that currently have
+// something in them.
+export const getPublicCategoriesWithProducts = cachedPublic("products:getPublicCategoriesWithProducts", [TAGS.categories, TAGS.products], TTL.feed, async (): Promise<PublicCategoryWithCount[]> => {
+  return (await getPublicCategories()).filter((c) => c.productCount > 0);
 });
 
 // Used by /categories/[slug]: the category itself is looked up independent
@@ -491,6 +447,22 @@ type HomepageProductRow = {
   has_published_content: boolean;
 };
 
+type DirectoryRow = HomepageProductRow & { total_count: number };
+
+function summaryFromDirectoryRow(row: HomepageProductRow): PublicProductSummary {
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    excerpt: excerptFrom(row.overview),
+    imagePath: row.image_path,
+    imageAlt: row.image_alt,
+    categories: row.categories ?? [],
+    hasAffiliateLink: row.has_affiliate_link === true,
+    hasDetailPage: row.has_published_content === true,
+  };
+}
+
 // Homepage "Latest products". Unlike every other public product query in
 // this file, this one does NOT require published product_content — an
 // Owner-created product (name + main image + affiliate URL, no Agency
@@ -511,15 +483,5 @@ export const getLatestPublicProducts = cachedPublic("products:getLatestPublicPro
   const supabase = createPublicClient();
   const { data, error } = await supabase.rpc("get_homepage_products", { p_limit: limit });
   if (error) throw new Error(`Failed to load latest products: ${error.message}`);
-  return ((data ?? []) as HomepageProductRow[]).map((row) => ({
-    id: row.id,
-    name: row.name,
-    slug: row.slug,
-    excerpt: excerptFrom(row.overview),
-    imagePath: row.image_path,
-    imageAlt: row.image_alt,
-    categories: row.categories ?? [],
-    hasAffiliateLink: row.has_affiliate_link === true,
-    hasDetailPage: row.has_published_content === true,
-  }));
+  return ((data ?? []) as HomepageProductRow[]).map(summaryFromDirectoryRow);
 });
