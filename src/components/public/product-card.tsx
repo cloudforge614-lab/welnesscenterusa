@@ -79,7 +79,6 @@ export function ProductCard({ product, priorityImage = false }: { product: Publi
                   <path d="M7 17 17 7M9 7h8v8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </a>
-              <p className="mt-1.5 text-center text-xs text-ink-subtle">Affiliate link · opens the official merchant site</p>
             </>
           )}
         </div>

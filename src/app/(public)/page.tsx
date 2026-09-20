@@ -255,7 +255,7 @@ function TrustSection() {
         <h2 id="trust-heading" className="font-display text-2xl text-ink">
           How we work
         </h2>
-        <div className="mt-8 grid gap-6 sm:grid-cols-3">
+        <div className="mt-8 grid gap-6 sm:grid-cols-2">
           <TrustCard
             icon="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
             title="Independent research"
@@ -265,12 +265,6 @@ function TrustSection() {
             icon="M12 21c-4.5-2.5-7-6-7-10 3 0 5.5 1.2 7 3.5C13.5 12.2 16 11 19 11c0 4-2.5 7.5-7 10Z"
             title="Editorial, not promotional"
             body="We aim for clear, honest descriptions — not exaggerated claims or manufactured urgency."
-          />
-          <TrustCard
-            icon="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-            title="Affiliate transparency"
-            body="Some links on this site are affiliate links. Read our disclosure to see exactly what that means."
-            href="/affiliate-disclosure"
           />
         </div>
       </div>
