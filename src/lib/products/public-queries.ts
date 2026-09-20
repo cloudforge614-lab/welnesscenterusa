@@ -46,6 +46,9 @@ export type PublicProductSummary = {
   // it tells the card whether to render a /go/[slug] CTA. Undefined elsewhere
   // means "not asked", and the card then renders no affiliate CTA.
   hasAffiliateLink?: boolean;
+  // Only populated by the homepage feed: whether /products/[slug] exists (it
+  // still requires published content). Undefined elsewhere means "yes".
+  hasDetailPage?: boolean;
 };
 
 type SummaryRow = {
@@ -485,6 +488,7 @@ type HomepageProductRow = {
   categories: { id: string; name: string; slug: string }[];
   created_at: string;
   has_affiliate_link: boolean;
+  has_published_content: boolean;
 };
 
 // Homepage "Latest products". Unlike every other public product query in
@@ -516,5 +520,6 @@ export const getLatestPublicProducts = cachedPublic("products:getLatestPublicPro
     imageAlt: row.image_alt,
     categories: row.categories ?? [],
     hasAffiliateLink: row.has_affiliate_link === true,
+    hasDetailPage: row.has_published_content === true,
   }));
 });
