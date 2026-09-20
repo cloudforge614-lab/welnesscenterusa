@@ -57,53 +57,31 @@ export default function HomePage() {
   );
 }
 
-// hero-products.webp (src/app/(public)/_assets/) is a cropped, lightly
-// softened still of real, generic wellness-product photography — bottles,
-// citrus, turmeric, greenery — used purely as decorative background
-// texture. It was cropped from a larger reference mockup that also
-// contained a fabricated review count, a fabricated discount badge, and
-// cart/account icons this site has no equivalent of (no accounts, no cart —
-// /go/[slug] is the only purchase path, and it leaves this site entirely).
-// None of that survived the crop. Nothing here claims these specific
-// bottles are real listings; the actual homepage catalogue renders below in
-// DiscoverySections, from real database rows only.
+// hero-products.webp (src/app/(public)/_assets/) is an UNMODIFIED crop of the
+// supplied reference photography — no blur, no sharpening, no filters of any
+// kind; measured detail matches the original crop. It was cropped from a
+// larger reference mockup that also contained a fabricated review count, a
+// fabricated discount badge, and cart/account icons this site has no
+// equivalent of (no accounts, no cart — /go/[slug] is the only purchase
+// path, and it leaves this site entirely). None of that is in the crop.
+//
+// The packaging in the photo carries its own printed text. That is part of
+// the supplied image and is deliberately NOT hidden by blurring: the
+// headline, copy and CTAs below are the site's only claims, and the
+// homepage catalogue is rendered from real database rows only.
+//
+// Layout note: the clean part of the source is only 295px tall. Stretching it
+// to fill a ~530px hero with object-fit:cover upscales it 2x and softens any
+// image, so the photo is laid out as a full-width band instead (220px tall on
+// phones, 270px from 640px up, object-cover cropping the sides). At those
+// heights the image is scaled DOWN at every width up to ~1650px, and only
+// mildly up beyond that. The top edge is masked into the brand green so
+// the band reads as part of the hero rather than a pasted strip; the mask is
+// pure alpha compositing, not a filter, and nothing sits on top of the photo.
 function Hero() {
   return (
     <section className="relative overflow-hidden border-b border-line bg-brand-900">
-      <div className="absolute inset-0">
-        {/* No placeholder="blur": Next.js renders that as an inline
-            data:image/svg+xml blur-up placeholder, which the CSP's
-            img-src 'self' https: (Step 7.2, deliberately scoped — no data:)
-            correctly refuses. Loosening that policy for a purely cosmetic
-            loading transition isn't worth it, especially given `priority`
-            below already loads this image eagerly rather than lazily. */}
-        <Image
-          src={heroProducts}
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center"
-        />
-        {/* hero-products.webp carries a light, uniform soft-focus (sharp
-            .blur(5) on the source crop, before object-fit:cover's own
-            upscaling softens it further on screen) — just enough that
-            packaging text is never legible, while bottle shapes, colors and
-            the surrounding greenery stay clearly recognizable as premium
-            product photography. Two earlier attempts got this wrong in
-            opposite directions: a sharp crop with only a CSS scrim left
-            "Omega-3 Fish Oil" and its claim bullets clearly readable at wide
-            viewports (exactly the kind of implied product claim this
-            project does not ship); a heavy .blur(14) then overcorrected
-            into the whole image reading as an indistinct wash, which is
-            what this comment and asset replace. This overlay does the
-            ordinary job of a hero scrim — contrast for the headline — not
-            text-hiding duty. */}
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-900 via-brand-900/75 to-brand-900/35 sm:via-brand-900/60 sm:to-brand-900/25" />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-900/35 via-transparent to-transparent" />
-      </div>
-
-      <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 pb-12 pt-20 sm:px-6 sm:pb-16 sm:pt-28">
         <div className="max-w-2xl">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-200">Health &amp; Wellness</p>
           <h1 className="mt-4 font-display text-4xl leading-tight text-white sm:text-5xl">
@@ -131,6 +109,20 @@ function Hero() {
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* The photograph itself: no filter, no overlay, no placeholder (Next's
+          placeholder="blur" would also be refused by the CSP — img-src has no
+          data:). pointer-events-none so the transparent masked top edge can
+          never intercept clicks meant for the CTAs above it. */}
+      <div className="pointer-events-none relative -mt-6 sm:-mt-10">
+        <Image
+          src={heroProducts}
+          alt=""
+          priority
+          sizes="100vw"
+          className="h-[220px] w-full object-cover object-center [mask-image:linear-gradient(to_bottom,transparent,black_38%)] sm:h-[270px]"
+        />
       </div>
     </section>
   );
