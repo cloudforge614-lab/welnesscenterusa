@@ -36,7 +36,14 @@ export default async function ProductsPage(props: PageProps<"/admin/products">) 
       <PageHeader
         title="Products"
         description="Everything you've added. Click a product to edit its name, link or status."
-        action={<AddProductButton />}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/admin/products/bulk-import" className={buttonStyles.secondary}>
+              Bulk import
+            </Link>
+            <AddProductButton />
+          </div>
+        }
       />
 
       <Card>

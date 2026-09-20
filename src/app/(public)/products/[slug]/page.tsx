@@ -5,6 +5,7 @@ import { redirectIfMoved } from "@/lib/redirects/lookup";
 import { AffiliateDisclosure } from "@/components/public/disclosure";
 import { ProductGrid } from "@/components/public/product-card";
 import { CategoryChip, PlaceholderImage } from "@/components/public/ui";
+import { ProductImage } from "@/components/public/product-image";
 import { siteUrl } from "@/lib/env";
 import { safeJsonLd } from "@/lib/content/json-ld";
 import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
@@ -95,7 +96,7 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
       <nav aria-label="Breadcrumb" className="text-sm text-ink-muted">
         <ol className="flex flex-wrap items-center gap-1.5">
           <li>
-            <Link href="/products" className="hover:text-ink">
+            <Link href="/products" className="inline-flex min-h-11 items-center hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100">
               Products
             </Link>
           </li>
@@ -109,10 +110,15 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
       <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:gap-14">
         <div>
           <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
-            <div className="aspect-square w-full">
+            <div className="relative aspect-square w-full bg-white">
               {primaryImage ? (
-                // eslint-disable-next-line @next/next/no-img-element -- arbitrary external host, see src/lib/products/image.ts
-                <img src={primaryImage.url} alt={primaryImage.alt ?? product.name} className="h-full w-full object-cover" />
+                <ProductImage
+                  src={primaryImage.url}
+                  alt={primaryImage.alt ?? product.name}
+                  sizes="(min-width: 1024px) 560px, 92vw"
+                  priority
+                  className="p-3"
+                />
               ) : (
                 <PlaceholderImage className="h-full w-full" />
               )}
@@ -121,9 +127,8 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
           {product.images.length > 1 && (
             <ul className="mt-3 grid grid-cols-4 gap-3">
               {product.images.slice(1, 5).map((img, i) => (
-                <li key={i} className="aspect-square overflow-hidden rounded-lg border border-line bg-surface">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- arbitrary external host, see src/lib/products/image.ts */}
-                  <img src={img.url} alt={img.alt ?? product.name} className="h-full w-full object-cover" />
+                <li key={i} className="relative aspect-square overflow-hidden rounded-lg border border-line bg-white">
+                  <ProductImage src={img.url} alt={img.alt ?? product.name} sizes="(min-width: 1024px) 130px, 22vw" className="p-1" />
                 </li>
               ))}
             </ul>

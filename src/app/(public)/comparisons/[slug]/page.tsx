@@ -73,7 +73,7 @@ export default async function ComparisonPage(props: PageProps<"/comparisons/[slu
       <nav aria-label="Breadcrumb" className="text-sm text-ink-muted">
         <ol className="flex flex-wrap items-center gap-1.5">
           <li>
-            <Link href="/comparisons" className="hover:text-ink">
+            <Link href="/comparisons" className="inline-flex min-h-11 items-center hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100">
               Comparisons
             </Link>
           </li>

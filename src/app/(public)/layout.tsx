@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/public/site-nav";
+import { BrandLogo } from "@/components/public/brand-logo";
 import { Analytics } from "@/components/public/analytics";
 import type { Metadata } from "next";
 import { analyticsEnabled, gaMeasurementId, googleSiteVerification } from "@/lib/env";
@@ -62,17 +63,17 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
             <div className="max-w-md">
-              <Link href="/" className="font-display text-lg text-ink">
-                Wellness Center <span className="text-brand-600">USA</span>
+              <Link href="/" className="inline-block rounded-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100">
+                <BrandLogo className="h-20 w-auto" />
               </Link>
               <p className="mt-2 text-sm leading-relaxed text-ink-muted">
                 Independent health and wellness product discovery. We research products so you don&apos;t have to.
               </p>
             </div>
 
-            <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-2">
+            <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-0">
               {FOOTER_LINKS.map((link) => (
-                <Link key={link.href} href={link.href} className="text-sm font-medium text-ink-muted hover:text-ink">
+                <Link key={link.href} href={link.href} className="inline-flex min-h-11 items-center text-sm font-medium text-ink-muted hover:text-ink">
                   {link.label}
                 </Link>
               ))}

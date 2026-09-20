@@ -126,7 +126,7 @@ export default async function CategoryPage(props: PageProps<"/categories/[slug]"
       <nav aria-label="Breadcrumb" className="text-sm text-ink-muted">
         <ol className="flex flex-wrap items-center gap-1.5">
           <li>
-            <Link href="/categories" className="hover:text-ink">
+            <Link href="/categories" className="inline-flex min-h-11 items-center hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100">
               Categories
             </Link>
           </li>

@@ -75,7 +75,7 @@ export default async function GuidePage(props: PageProps<"/guides/[slug]">) {
       <nav aria-label="Breadcrumb" className="text-sm text-ink-muted">
         <ol className="flex flex-wrap items-center gap-1.5">
           <li>
-            <Link href="/guides" className="hover:text-ink">
+            <Link href="/guides" className="inline-flex min-h-11 items-center hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100">
               Guides
             </Link>
           </li>

@@ -73,7 +73,7 @@ export default async function ReviewPage(props: PageProps<"/reviews/[slug]">) {
       <nav aria-label="Breadcrumb" className="text-sm text-ink-muted">
         <ol className="flex flex-wrap items-center gap-1.5">
           <li>
-            <Link href="/reviews" className="hover:text-ink">
+            <Link href="/reviews" className="inline-flex min-h-11 items-center hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100">
               Reviews
             </Link>
           </li>

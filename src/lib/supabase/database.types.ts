@@ -948,6 +948,7 @@ export type Database = {
         Returns: {
           categories: Json
           created_at: string
+          has_affiliate_link: boolean
           id: string
           image_alt: string
           image_path: string

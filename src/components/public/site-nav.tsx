@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cx } from "@/lib/format";
+import { BrandLogo } from "./brand-logo";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -17,22 +18,6 @@ const NAV_LINKS = [
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ] as const;
-
-function BrandMark() {
-  return (
-    <span className="flex items-center gap-2.5">
-      <span className="grid size-8 place-items-center rounded-lg bg-brand-700 text-white">
-        <svg viewBox="0 0 24 24" className="size-4.5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
-          <path d="M12 21c-4.5-2.5-7-6-7-10 3 0 5.5 1.2 7 3.5C13.5 12.2 16 11 19 11c0 4-2.5 7.5-7 10Z" />
-          <path d="M12 14.5V8c0-2 1-3.5 3-4.5" />
-        </svg>
-      </span>
-      <span className="font-display text-lg leading-none text-ink">
-        Wellness Center <span className="text-brand-600">USA</span>
-      </span>
-    </span>
-  );
-}
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -54,20 +39,17 @@ export function SiteHeader() {
 
   return (
     // The drawer is rendered as a SIBLING of <header>, not a child of it.
-    // <header> has backdrop-blur (backdrop-filter), and per the CSS spec a
-    // filter/backdrop-filter on an ancestor establishes the containing block
-    // for any position:fixed descendant — so a `fixed inset-0` drawer nested
-    // inside this header was being sized to the header's own ~72px box
-    // instead of the viewport, letting the hero and rest of the page show
-    // through below it and shrinking the backdrop to a thin strip. Moving
-    // the drawer out from under that ancestor is the actual fix; PublicLayout
-    // (the next ancestor up) applies no filter/transform of its own, so the
-    // drawer's containing block is correctly the viewport from here.
+    // The header used to carry a backdrop-filter, which per the CSS spec makes
+    // it the containing block for any position:fixed descendant — a nested
+    // `fixed inset-0` drawer was sized to the header's own box instead of the
+    // viewport. The filter is gone now (the header is a solid surface; nothing
+    // on the public site is blurred), but the drawer stays a sibling so no
+    // future transform/filter on the header can reintroduce that.
     <>
-      <header className="sticky top-0 z-30 border-b border-line bg-surface/85 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-          <Link href="/" className="shrink-0">
-            <BrandMark />
+      <header className="sticky top-0 z-30 border-b border-line bg-surface">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2 sm:px-6">
+          <Link href="/" className="shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100">
+            <BrandLogo priority className="h-12 w-auto sm:h-14 lg:h-16" />
           </Link>
 
           <nav aria-label="Primary" className="hidden lg:block">
@@ -92,7 +74,7 @@ export function SiteHeader() {
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="rounded-lg p-2 text-ink-muted hover:bg-sunken lg:hidden"
+            className="grid size-11 place-items-center rounded-lg text-ink-muted hover:bg-sunken focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100 lg:hidden"
             aria-label="Open navigation"
             aria-expanded={open}
           >
@@ -107,7 +89,7 @@ export function SiteHeader() {
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
           <button
             type="button"
-            className="absolute inset-0 bg-brand-900/30 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-brand-900/40"
             onClick={() => setOpen(false)}
             aria-label="Close navigation"
           />
@@ -118,12 +100,14 @@ export function SiteHeader() {
               link list ever grows taller than a short landscape viewport,
               the panel scrolls internally instead of clipping. */}
           <div className="relative ml-auto flex h-full w-72 max-w-[85vw] flex-col overflow-y-auto animate-fade-up bg-surface shadow-pop">
-            <div className="flex items-center justify-between border-b border-line px-5 py-4">
-              <BrandMark />
+            <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
+              <Link href="/" onClick={() => setOpen(false)} className="rounded-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100">
+                <BrandLogo className="h-12 w-auto" />
+              </Link>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-2 text-ink-muted hover:bg-sunken"
+                className="grid size-11 place-items-center rounded-lg text-ink-muted hover:bg-sunken focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100"
                 aria-label="Close navigation"
               >
                 <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>

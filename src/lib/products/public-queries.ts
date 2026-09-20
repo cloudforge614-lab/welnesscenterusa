@@ -42,6 +42,10 @@ export type PublicProductSummary = {
   imagePath: string | null;
   imageAlt: string | null;
   categories: { id: string; name: string; slug: string }[];
+  // Only populated by the homepage feed. A boolean, never the destination:
+  // it tells the card whether to render a /go/[slug] CTA. Undefined elsewhere
+  // means "not asked", and the card then renders no affiliate CTA.
+  hasAffiliateLink?: boolean;
 };
 
 type SummaryRow = {
@@ -480,6 +484,7 @@ type HomepageProductRow = {
   image_alt: string | null;
   categories: { id: string; name: string; slug: string }[];
   created_at: string;
+  has_affiliate_link: boolean;
 };
 
 // Homepage "Latest products". Unlike every other public product query in
@@ -510,5 +515,6 @@ export const getLatestPublicProducts = cachedPublic("products:getLatestPublicPro
     imagePath: row.image_path,
     imageAlt: row.image_alt,
     categories: row.categories ?? [],
+    hasAffiliateLink: row.has_affiliate_link === true,
   }));
 });

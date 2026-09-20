@@ -7,7 +7,7 @@ export default function GuideNotFound() {
       <p className="mt-2 text-sm text-ink-muted">It may have been removed, or the link is incorrect.</p>
       <Link
         href="/guides"
-        className="mt-6 inline-flex items-center justify-center rounded-lg border border-line-strong bg-surface px-4 py-2 text-sm font-medium text-ink shadow-card transition hover:bg-sunken"
+        className="mt-6 inline-flex items-center justify-center min-h-11 rounded-lg border border-line-strong bg-surface px-4 py-2 text-sm font-medium text-ink shadow-card transition hover:bg-sunken focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100"
       >
         Browse guides
       </Link>

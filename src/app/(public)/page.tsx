@@ -161,19 +161,26 @@ async function DiscoverySections() {
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6" aria-labelledby="latest-heading">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h2 id="latest-heading" className="font-display text-3xl text-ink">
+            <h2 id="latest-heading" className="font-display text-2xl text-ink sm:text-3xl">
               Latest products
             </h2>
             <p className="mt-2 text-[15px] text-ink-muted">Recently added to our directory.</p>
+            <p className="mt-1 text-xs text-ink-subtle">
+              Some links are affiliate links.{" "}
+              <Link href="/affiliate-disclosure" className="font-medium text-brand-700 underline underline-offset-2 hover:text-brand-800">
+                Read our disclosure
+              </Link>
+              .
+            </p>
           </div>
-          <Link href="/products" className="hidden shrink-0 text-sm font-medium text-brand-700 hover:text-brand-800 sm:block">
+          <Link href="/products" className="hidden min-h-11 shrink-0 items-center text-sm font-medium text-brand-700 hover:text-brand-800 sm:inline-flex">
             View all →
           </Link>
         </div>
         <div className="mt-8">
           <ProductGrid products={latest} />
         </div>
-        <Link href="/products" className="mt-6 block text-sm font-medium text-brand-700 hover:text-brand-800 sm:hidden">
+        <Link href="/products" className="mt-4 inline-flex min-h-11 items-center text-sm font-medium text-brand-700 hover:text-brand-800 sm:hidden">
           View all products →
         </Link>
       </section>

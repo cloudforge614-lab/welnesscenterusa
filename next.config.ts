@@ -130,7 +130,24 @@ const securityHeaders = [
   },
 ];
 
+// The image optimizer may fetch ONLY this project's public product-images
+// bucket. The host comes from the same env var the server-side Supabase client
+// uses, so it cannot drift; if it is unset the list is empty and every image
+// falls back to the plain <img> path (see components/public/product-image.tsx).
+const supabaseImageHost = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").hostname;
+  } catch {
+    return null;
+  }
+})();
+
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: supabaseImageHost
+      ? [{ protocol: "https", hostname: supabaseImageHost, pathname: "/storage/v1/object/public/product-images/**" }]
+      : [],
+  },
   // Next.js 16 streams the initial HTML (committing a 200 status) before
   // generateMetadata resolves, by default, for any request it doesn't
   // recognize as an "HTML-limited bot". That means notFound() calls in
@@ -142,6 +159,17 @@ const nextConfig: NextConfig = {
   // metadata entirely, so the full page (including any notFound() call)
   // resolves before the response starts, restoring a real 404 status.
   htmlLimitedBots: /.*/,
+
+  // Server Actions reject any request body over 1 MB by default. That silently
+  // broke every image upload above ~1 MB (the Add Product dialog created
+  // nothing and showed no error — reproduced with a 1.7 MB JPEG), so the limit
+  // is raised to the product-image cap (5 MiB, plus multipart overhead). Bulk
+  // import also relies on this: it sends one image per request. Note the
+  // hosting platform (Vercel) separately caps a request body at ~4.5 MB, which
+  // is why bulk import enforces a 4 MB per-image upload limit in its preview.
+  experimental: {
+    serverActions: { bodySizeLimit: "5.5mb" },
+  },
 
   async headers() {
     return [
