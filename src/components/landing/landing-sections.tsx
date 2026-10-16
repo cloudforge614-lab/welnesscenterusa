@@ -425,8 +425,8 @@ export function LandingSectionView({ section, band, sources }: { section: Landin
               const src = sources[r.sourceRef - 1];
               return (
                 <li key={i} className={cx(CARD, "flex flex-col")}>
-                  <Stars rating={r.rating} />
-                  {r.title && <h3 className="mt-4 font-semibold text-[var(--lp-text)]">{r.title}</h3>}
+                  {r.rating !== null && <Stars rating={r.rating} />}
+                  {r.title && <h3 className={cx(r.rating !== null && "mt-4", "font-semibold text-[var(--lp-text)]")}>{r.title}</h3>}
                   <p className="mt-3 flex-1 text-[15px] leading-relaxed text-[var(--lp-muted)]">&ldquo;{r.text}&rdquo;</p>
                   <p className="mt-5 text-sm font-semibold text-[var(--lp-text)]">
                     {r.name}

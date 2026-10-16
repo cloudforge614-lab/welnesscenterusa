@@ -53,7 +53,7 @@ export type LandingSection =
   | (Base & { kind: "features"; items: { icon: IconName; title: string; body: string; chip: string | null }[] })
   // Customer reviews. Rendered ONLY with a source: every review must cite
   // where it was published (sourceRef), so nothing invented can appear.
-  | (Base & { kind: "reviews"; items: { name: string; location: string | null; rating: number; title: string | null; text: string; sourceRef: number }[] })
+  | (Base & { kind: "reviews"; items: { name: string; location: string | null; rating: number | null; title: string | null; text: string; sourceRef: number }[] })
   // Return/guarantee terms as stated by the seller (cite the policy).
   | (Base & { kind: "guarantee"; body: string; items: string[] });
 
@@ -191,9 +191,10 @@ export function parseSections(raw: unknown, sourceCount: number): LandingSection
         text: str(i.text, 1500),
         sourceRef: ref(i.sourceRef),
       }));
-      // A review without a valid source is dropped, never shown.
-      const valid = items?.filter((i) => i.name && i.rating && i.text && i.sourceRef);
-      if (valid && valid.length > 0) section = { ...base, kind, items: valid as { name: string; location: string | null; rating: number; title: string | null; text: string; sourceRef: number }[] };
+      // A review without a valid source is dropped, never shown. The rating is
+      // optional: testimonials published without stars are shown without stars.
+      const valid = items?.filter((i) => i.name && i.text && i.sourceRef);
+      if (valid && valid.length > 0) section = { ...base, kind, items: valid as { name: string; location: string | null; rating: number | null; title: string | null; text: string; sourceRef: number }[] };
     } else if (kind === "guarantee") {
       const body = str(e.body, 2000);
       const items = strList(e.items, 8, 200);
