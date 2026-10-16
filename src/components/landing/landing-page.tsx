@@ -104,7 +104,7 @@ export function LandingPage({
               )}
             </div>
             {showCta && (
-              <p className="mt-3 text-xs leading-relaxed text-[var(--lp-muted)]">Opens the official store. We may earn a commission if you buy through our links.</p>
+              <p className="mt-3 text-xs leading-relaxed text-[var(--lp-muted)]">Opens the official store.</p>
             )}
             {data.benefits.length > 0 && (
               <ul className="mt-7 flex flex-wrap gap-2" aria-label="Highlights">
@@ -253,7 +253,6 @@ export function LandingPage({
             <div className="mt-8">
               <LandingCta slug={product.slug} mode={mode} location="product-page-final" label={ctaLabel} />
             </div>
-            <p className="mt-4 text-xs text-[var(--lp-surface)]/80">We may earn a commission if you buy through our links.</p>
           </div>
         </section>
       )}
