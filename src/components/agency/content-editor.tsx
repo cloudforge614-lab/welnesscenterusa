@@ -11,6 +11,7 @@ import {
   deleteIngredient,
   deleteProductImage,
   setContentStatus,
+  setEditorialStatus,
   setPrimaryImage,
   updateBenefit,
   updateContentFields,
@@ -21,11 +22,14 @@ import {
 } from "@/app/agency/actions";
 import type { AgencyProductDetail } from "@/lib/products/agency-queries";
 import { Badge, buttonStyles, Card, cx, inputStyles, Spinner } from "@/components/admin/ui";
+import { LandingEditor, WordCount } from "@/components/agency/landing-editor";
+import { editorialMeta, type EditorialStatus } from "@/lib/products/status";
 
 type Role = "agency_admin" | "seo_editor" | "content_editor";
 
 const ALL_TABS = [
   { id: "overview", label: "Overview", group: "content" },
+  { id: "landing", label: "Landing page", group: "content" },
   { id: "benefits", label: "Benefits", group: "content" },
   { id: "ingredients", label: "Ingredients", group: "content" },
   { id: "faqs", label: "FAQs", group: "content" },
@@ -70,13 +74,12 @@ export function ContentEditor({ product, role }: { product: AgencyProductDetail;
             </button>
           ))}
         </nav>
-        <div className="pr-3">
-          <PublishControl productId={product.id} status={product.content?.status ?? null} canPublish={canEditContent} />
-        </div>
       </div>
+      <EditorialControl product={product} role={role} />
 
       <div className="p-5 sm:p-6">
         {tab === "overview" && <OverviewForm product={product} readOnly={!canEditContent} />}
+        {tab === "landing" && <LandingEditor product={product} readOnly={!canEditContent} />}
         {tab === "benefits" && <BenefitsPanel productId={product.id} items={product.benefits} readOnly={!canEditContent} />}
         {tab === "ingredients" && <IngredientsPanel productId={product.id} items={product.ingredients} readOnly={!canEditContent} />}
         {tab === "faqs" && <FaqsPanel productId={product.id} items={product.faqs} readOnly={!canEditContent} />}
@@ -87,36 +90,70 @@ export function ContentEditor({ product, role }: { product: AgencyProductDetail;
   );
 }
 
-function PublishControl({
-  productId,
-  status,
-  canPublish,
-}: {
-  productId: string;
-  status: "draft" | "published" | null;
-  canPublish: boolean;
-}) {
+// The landing-page workflow (migration 0026): Draft → Needs review →
+// Approved → Published. Buttons reflect the role model; the database guard
+// enforces it regardless of what the UI offers.
+function EditorialControl({ product, role }: { product: AgencyProductDetail; role: Role }) {
   const [pending, startTransition] = useTransition();
-  if (!canPublish) return status === "published" ? <Badge tone="brand">Published</Badge> : <Badge tone="sky">Draft</Badge>;
+  const content = product.content;
+  const editorial: EditorialStatus | null = content?.editorialStatus ?? null;
+  const published = content?.status === "published";
+  const meta = editorialMeta(editorial, content?.status ?? null);
+  const isApprover = role === "agency_admin";
+  const canWrite = role === "agency_admin" || role === "content_editor";
 
-  const target = status === "published" ? "draft" : "published";
-  return (
-    <button
-      type="button"
-      disabled={pending || !status}
-      title={!status ? "Add content before publishing" : undefined}
-      className={status === "published" ? buttonStyles.secondary : buttonStyles.primary}
-      onClick={() =>
-        startTransition(async () => {
-          const result = await setContentStatus({ productId, status: target });
-          if (!result.ok) { toast.error(result.error); return; }
-          toast.success(result.message);
-        })
+  function run(action: () => Promise<{ ok: true; message: string } | { ok: false; error: string }>) {
+    startTransition(async () => {
+      const result = await action();
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
       }
-    >
-      {pending && <Spinner />}
-      {status === "published" ? "Unpublish" : "Publish"}
-    </button>
+      toast.success(result.message);
+    });
+  }
+  const editorialTo = (status: "draft" | "needs_review" | "approved") => () => run(() => setEditorialStatus({ productId: product.id, status }));
+  const publishTo = (status: "draft" | "published") => () => run(() => setContentStatus({ productId: product.id, status }));
+
+  const buttons: { label: string; onClick: () => void; primary?: boolean }[] = [];
+  if (content && canWrite) {
+    if (published) {
+      if (isApprover) buttons.push({ label: "Unpublish", onClick: publishTo("draft") });
+    } else {
+      if (editorial === "draft" || editorial === "not_started") buttons.push({ label: "Submit for review", onClick: editorialTo("needs_review"), primary: !isApprover });
+      if (editorial === "needs_review" || editorial === "approved") buttons.push({ label: "Back to draft", onClick: editorialTo("draft") });
+      if (isApprover && editorial !== "approved") buttons.push({ label: "Approve", onClick: editorialTo("approved") });
+      // An approver publishing is also their approval (the database records it).
+      if (isApprover) buttons.push({ label: "Publish", onClick: publishTo("published"), primary: true });
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3 border-b border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone={meta.tone}>{meta.label}</Badge>
+          {content?.lastReviewedAt && <span className="text-xs text-ink-subtle">Last reviewed {new Date(content.lastReviewedAt).toLocaleDateString()}</span>}
+        </div>
+        {role !== "seo_editor" && <WordCount product={product} />}
+        {role === "content_editor" && published && (
+          <p className="text-xs text-ink-subtle">This page is live. Changes to it need an agency admin or the owner.</p>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {content && (
+          <a href={`/agency/preview/${product.id}`} target="_blank" rel="noopener" className={buttonStyles.ghost}>
+            Preview
+          </a>
+        )}
+        {buttons.map((b) => (
+          <button key={b.label} type="button" disabled={pending} className={b.primary ? buttonStyles.primary : buttonStyles.secondary} onClick={b.onClick}>
+            {pending && b.primary && <Spinner />}
+            {b.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

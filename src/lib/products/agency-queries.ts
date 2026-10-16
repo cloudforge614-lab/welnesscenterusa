@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isUuid, PAGE_SIZE, sanitizeSearch } from "./queries";
-import type { ContentStatus, ProductStatus } from "./status";
+import type { ContentStatus, EditorialStatus, ProductStatus } from "./status";
 
 // Agency-facing query layer. Deliberately never selects affiliate_links or
 // affiliate_clicks (agency has no RLS grant on either table anyway — see
@@ -130,6 +130,20 @@ export type AgencyProductDetail = {
     considerations: string | null;
     status: ContentStatus;
     updatedAt: string;
+    // Landing page (migration 0026). JSON columns stay unknown here; the
+    // editor and the renderer both parse them with src/lib/landing/content.ts.
+    announcement: string | null;
+    heroHeadline: string | null;
+    heroSubtitle: string | null;
+    brand: string | null;
+    manufacturer: string | null;
+    sections: unknown;
+    theme: unknown;
+    sources: unknown;
+    editorialStatus: EditorialStatus;
+    submittedAt: string | null;
+    approvedAt: string | null;
+    lastReviewedAt: string | null;
   } | null;
   benefits: { id: string; title: string; description: string | null; position: number }[];
   ingredients: { id: string; name: string; description: string | null; position: number }[];
@@ -192,6 +206,18 @@ export const getAgencyProduct = cache(async (id: string): Promise<AgencyProductD
           considerations: content.considerations,
           status: content.status,
           updatedAt: content.updated_at,
+          announcement: content.announcement,
+          heroHeadline: content.hero_headline,
+          heroSubtitle: content.hero_subtitle,
+          brand: content.brand,
+          manufacturer: content.manufacturer,
+          sections: content.sections,
+          theme: content.theme,
+          sources: content.sources,
+          editorialStatus: content.editorial_status,
+          submittedAt: content.submitted_at,
+          approvedAt: content.approved_at,
+          lastReviewedAt: content.last_reviewed_at,
         }
       : null,
     benefits: (benefitsRes.data ?? []).map((b) => ({ id: b.id, title: b.title, description: b.description, position: b.position })),

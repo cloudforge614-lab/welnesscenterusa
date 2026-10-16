@@ -153,3 +153,43 @@ dialog::backdrop {
     transition-duration: 1ms !important;
   }
 }
+
+/* Product landing pages (src/components/landing). Markdown rendered inside a
+   landing page takes the product's validated theme tokens (--lp-*, set on the
+   .lp wrapper only), so nothing outside a landing page changes. */
+.lp .lp-prose {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--lp-text);
+}
+.lp .lp-prose h2,
+.lp .lp-prose h3,
+.lp .lp-prose h4 {
+  color: var(--lp-primary);
+}
+.lp .lp-prose a,
+.lp .lp-prose a:hover {
+  color: var(--lp-primary);
+}
+.lp .lp-prose strong {
+  color: var(--lp-text);
+}
+.lp .lp-prose blockquote {
+  color: var(--lp-muted);
+}
+/* The caution callout keeps the site's fixed amber palette (pre-checked for
+   contrast) instead of the product theme. */
+.lp .lp-callout-caution .lp-prose,
+.lp .lp-callout-caution .lp-prose h2,
+.lp .lp-callout-caution .lp-prose h3,
+.lp .lp-callout-caution .lp-prose a,
+.lp .lp-callout-caution .lp-prose strong {
+  color: var(--color-amber-ink);
+}
+
+/* Intro text on a dark A+ band (stat band / final CTA). */
+.lp .lp-prose-dark,
+.lp .lp-prose-dark a,
+.lp .lp-prose-dark strong {
+  color: var(--lp-surface);
+}

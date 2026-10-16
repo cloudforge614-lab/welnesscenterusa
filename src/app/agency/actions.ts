@@ -1,11 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { submitIndexNow } from "@/lib/seo/indexnow";
 import { revalidatePublic, TAGS } from "@/lib/cache/tags";
 import { redirect } from "next/navigation";
 import { assertAgency, assertSeoWriter, NotAgencyError } from "@/lib/auth/agency";
 import { isUuid } from "@/lib/products/queries";
 import { createClient } from "@/lib/supabase/server";
+import type { Json } from "@/lib/supabase/database.types";
+import { validateSectionsJson, validateSources, validateTheme, type SourceInput } from "@/lib/landing/validate";
 
 export type ActionResult<T = unknown> = { ok: true; message: string; data?: T } | { ok: false; error: string };
 
@@ -21,6 +25,20 @@ async function withAgency<T>(run: () => Promise<ActionResult<T>>): Promise<Actio
     console.error("[agency action] unexpected error", error);
     return fail("Something went wrong. Please try again.");
   }
+}
+
+// The editorial guard triggers (migration 0026) reject workflow violations
+// with errcode 42501 and a message written for editors. Those messages are
+// passed through; anything else (including plain RLS denials) stays generic.
+const WORKFLOW_MESSAGES = [
+  "Published content can only be changed by an approver",
+  "Only an approver (owner or agency admin) can approve content.",
+  "Content must be approved before it can be published.",
+];
+function dbFail(error: { code?: string; message?: string } | null, fallback: string) {
+  const message = error?.message ?? "";
+  if (error?.code === "42501" && WORKFLOW_MESSAGES.some((m) => message.startsWith(m))) return fail(message);
+  return fail(fallback);
 }
 
 function clip(raw: unknown, max: number): string | null {
@@ -81,7 +99,7 @@ export async function updateContentFields(input: {
     const result = existing
       ? await supabase.from("product_content").update(fields).eq("product_id", productId)
       : await supabase.from("product_content").insert({ product_id: productId, ...fields });
-    if (result.error) return fail("Something went wrong saving your change. Please try again.");
+    if (result.error) return dbFail(result.error, "Something went wrong saving your change. Please try again.");
 
     refresh(productId);
     return { ok: true, message: "Saved" };
@@ -94,6 +112,12 @@ export async function setContentStatus(input: { productId: unknown; status: "dra
     if (!isUuid(productId)) return fail("That product doesn't exist.");
     const { session, supabase } = await assertAgency();
     if (session.role === "seo_editor") return fail("SEO editors can't publish content.");
+    if (input.status !== "draft" && input.status !== "published") return fail("That isn't a valid status.");
+    // Publishing is an approval decision (migration 0026): only an approver
+    // may publish. The database guard enforces the same rule for any request.
+    if (input.status === "published" && session.role !== "agency_admin") {
+      return fail("Only an agency admin or the owner can publish. Submit the page for review instead.");
+    }
 
     const { data: existing } = await supabase.from("product_content").select("id").eq("product_id", productId).maybeSingle();
     if (!existing) return fail("Add some content before publishing.");
@@ -102,10 +126,111 @@ export async function setContentStatus(input: { productId: unknown; status: "dra
       .from("product_content")
       .update({ status: input.status, updated_by: session.userId })
       .eq("product_id", productId);
-    if (error) return fail("Something went wrong. Please try again.");
+    if (error) return dbFail(error, "Something went wrong. Please try again.");
 
     refresh(productId);
+    // IndexNow hint for the changed URL (a no-op unless INDEXNOW_KEY is
+    // configured). Runs after the response, so it never slows the editor.
+    const { data: product } = await supabase.from("products").select("slug").eq("id", productId).maybeSingle();
+    if (product?.slug) after(() => submitIndexNow([`/products/${product.slug}`]));
     return { ok: true, message: input.status === "published" ? "Content published" : "Content moved back to draft" };
+  });
+}
+
+// ── Landing page fields (migration 0026) ───────────────────────────────────
+
+export async function updateLandingFields(input: {
+  productId: unknown;
+  announcement: unknown;
+  heroHeadline: unknown;
+  heroSubtitle: unknown;
+  brand: unknown;
+  manufacturer: unknown;
+  sectionsJson: unknown;
+  sources: unknown;
+  theme: unknown;
+}) {
+  return withAgency(async () => {
+    const productId = typeof input?.productId === "string" ? input.productId : "";
+    if (!isUuid(productId)) return fail("That product doesn't exist.");
+    const { session, supabase } = await assertAgency();
+    if (session.role === "seo_editor") return fail("SEO editors can't change product content.");
+
+    const text = (v: unknown) => (typeof v === "string" ? v : "");
+    const sourceRows: SourceInput[] = Array.isArray(input.sources)
+      ? input.sources.slice(0, 41).map((r) => {
+          const o = r && typeof r === "object" ? (r as Record<string, unknown>) : {};
+          return { label: text(o.label), url: text(o.url), kind: text(o.kind), accessed: text(o.accessed) };
+        })
+      : [];
+    const sources = validateSources(sourceRows);
+    if (!sources.ok) return fail(sources.errors.join(" "));
+
+    const sections = validateSectionsJson(text(input.sectionsJson), sources.value.length);
+    if (!sections.ok) return fail(sections.errors.join(" "));
+
+    const themeInput: Record<string, string> = {};
+    if (input.theme && typeof input.theme === "object" && !Array.isArray(input.theme)) {
+      for (const [k, v] of Object.entries(input.theme as Record<string, unknown>)) if (typeof v === "string") themeInput[k] = v;
+    }
+    const theme = validateTheme(themeInput);
+    if (!theme.ok) return fail(theme.errors.join(" "));
+
+    const fields = {
+      announcement: clip(input.announcement, 200),
+      hero_headline: clip(input.heroHeadline, 140),
+      hero_subtitle: clip(input.heroSubtitle, 400),
+      brand: clip(input.brand, 120),
+      manufacturer: clip(input.manufacturer, 160),
+      sections: sections.value as Json,
+      sources: sources.value as Json,
+      theme: theme.value as Json,
+      updated_by: session.userId,
+    };
+
+    const { data: existing, error: existingErr } = await supabase
+      .from("product_content")
+      .select("id")
+      .eq("product_id", productId)
+      .maybeSingle();
+    if (existingErr) return fail("Something went wrong saving your change. Please try again.");
+
+    const result = existing
+      ? await supabase.from("product_content").update(fields).eq("product_id", productId)
+      : await supabase.from("product_content").insert({ product_id: productId, ...fields });
+    if (result.error) return dbFail(result.error, "Something went wrong saving your change. Please try again.");
+
+    refresh(productId);
+    return { ok: true, message: "Landing page saved" };
+  });
+}
+
+// Draft → Needs review → Approved. Publishing stays in setContentStatus.
+// The database guard is the real boundary; these checks only give a clear
+// message before the request is sent.
+export async function setEditorialStatus(input: { productId: unknown; status: unknown }) {
+  return withAgency(async () => {
+    const productId = typeof input?.productId === "string" ? input.productId : "";
+    if (!isUuid(productId)) return fail("That product doesn't exist.");
+    const status = input?.status;
+    if (status !== "draft" && status !== "needs_review" && status !== "approved") return fail("That isn't a valid status.");
+    const { session, supabase } = await assertAgency();
+    if (session.role === "seo_editor") return fail("SEO editors can't change the review status.");
+    if (status === "approved" && session.role !== "agency_admin") return fail("Only an agency admin or the owner can approve content.");
+
+    const { data: existing } = await supabase.from("product_content").select("status").eq("product_id", productId).maybeSingle();
+    if (!existing) return fail("Add some content first.");
+    if (existing.status === "published" && status !== "approved") return fail("Unpublish the page before sending it back for changes.");
+
+    const { error } = await supabase
+      .from("product_content")
+      .update({ editorial_status: status, updated_by: session.userId })
+      .eq("product_id", productId);
+    if (error) return dbFail(error, "Something went wrong. Please try again.");
+
+    refresh(productId);
+    const message = status === "approved" ? "Approved" : status === "needs_review" ? "Submitted for review" : "Moved back to draft";
+    return { ok: true, message };
   });
 }
 
@@ -123,7 +248,7 @@ export async function addBenefit(input: { productId: unknown; title: unknown; de
     const { error } = await supabase
       .from("product_benefits")
       .insert({ product_id: productId, title, description: clip(input.description, 2000), position: count ?? 0 });
-    if (error) return fail("Couldn't add that benefit.");
+    if (error) return dbFail(error, "Couldn't add that benefit.");
     refresh(productId);
     return { ok: true, message: "Benefit added" };
   });
@@ -141,7 +266,7 @@ export async function updateBenefit(input: { productId: unknown; id: unknown; ti
       .update({ title, description: clip(input.description, 2000) })
       .eq("id", id)
       .eq("product_id", productId);
-    if (error) return fail("Couldn't save that benefit.");
+    if (error) return dbFail(error, "Couldn't save that benefit.");
     refresh(productId);
     return { ok: true, message: "Saved" };
   });
@@ -154,7 +279,7 @@ export async function deleteBenefit(input: ListRow) {
     if (!isUuid(productId) || !isUuid(id)) return fail("That benefit doesn't exist.");
     const { supabase } = await assertAgency();
     const { error } = await supabase.from("product_benefits").delete().eq("id", id).eq("product_id", productId);
-    if (error) return fail("Couldn't remove that benefit.");
+    if (error) return dbFail(error, "Couldn't remove that benefit.");
     refresh(productId);
     return { ok: true, message: "Benefit removed" };
   });
@@ -170,7 +295,7 @@ export async function addIngredient(input: { productId: unknown; name: unknown; 
     const { error } = await supabase
       .from("product_ingredients")
       .insert({ product_id: productId, name, description: clip(input.description, 2000), position: count ?? 0 });
-    if (error) return fail("Couldn't add that ingredient.");
+    if (error) return dbFail(error, "Couldn't add that ingredient.");
     refresh(productId);
     return { ok: true, message: "Ingredient added" };
   });
@@ -188,7 +313,7 @@ export async function updateIngredient(input: { productId: unknown; id: unknown;
       .update({ name, description: clip(input.description, 2000) })
       .eq("id", id)
       .eq("product_id", productId);
-    if (error) return fail("Couldn't save that ingredient.");
+    if (error) return dbFail(error, "Couldn't save that ingredient.");
     refresh(productId);
     return { ok: true, message: "Saved" };
   });
@@ -201,7 +326,7 @@ export async function deleteIngredient(input: ListRow) {
     if (!isUuid(productId) || !isUuid(id)) return fail("That ingredient doesn't exist.");
     const { supabase } = await assertAgency();
     const { error } = await supabase.from("product_ingredients").delete().eq("id", id).eq("product_id", productId);
-    if (error) return fail("Couldn't remove that ingredient.");
+    if (error) return dbFail(error, "Couldn't remove that ingredient.");
     refresh(productId);
     return { ok: true, message: "Ingredient removed" };
   });
@@ -216,7 +341,7 @@ export async function addFaq(input: { productId: unknown; question: unknown; ans
     const { supabase } = await assertAgency();
     const { count } = await supabase.from("product_faqs").select("id", { count: "exact", head: true }).eq("product_id", productId);
     const { error } = await supabase.from("product_faqs").insert({ product_id: productId, question, answer, position: count ?? 0 });
-    if (error) return fail("Couldn't add that FAQ.");
+    if (error) return dbFail(error, "Couldn't add that FAQ.");
     refresh(productId);
     return { ok: true, message: "FAQ added" };
   });
@@ -231,7 +356,7 @@ export async function updateFaq(input: { productId: unknown; id: unknown; questi
     if (!isUuid(productId) || !isUuid(id) || !question || !answer) return fail("Enter both a question and an answer.");
     const { supabase } = await assertAgency();
     const { error } = await supabase.from("product_faqs").update({ question, answer }).eq("id", id).eq("product_id", productId);
-    if (error) return fail("Couldn't save that FAQ.");
+    if (error) return dbFail(error, "Couldn't save that FAQ.");
     refresh(productId);
     return { ok: true, message: "Saved" };
   });
@@ -244,7 +369,7 @@ export async function deleteFaq(input: ListRow) {
     if (!isUuid(productId) || !isUuid(id)) return fail("That FAQ doesn't exist.");
     const { supabase } = await assertAgency();
     const { error } = await supabase.from("product_faqs").delete().eq("id", id).eq("product_id", productId);
-    if (error) return fail("Couldn't remove that FAQ.");
+    if (error) return dbFail(error, "Couldn't remove that FAQ.");
     refresh(productId);
     return { ok: true, message: "FAQ removed" };
   });

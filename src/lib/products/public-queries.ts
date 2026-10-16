@@ -208,6 +208,18 @@ export type PublicProductDetail = {
   ingredients: { id: string; name: string; description: string | null }[];
   faqs: { id: string; question: string; answer: string }[];
   categories: { id: string; name: string; slug: string }[];
+  // A+ landing-page fields (migration 0026). The JSON columns are returned
+  // raw and parsed by src/lib/landing/* right before rendering, where invalid
+  // entries are dropped.
+  announcement: string | null;
+  heroHeadline: string | null;
+  heroSubtitle: string | null;
+  brand: string | null;
+  manufacturer: string | null;
+  sections: unknown;
+  theme: unknown;
+  sources: unknown;
+  lastReviewedAt: string | null;
 };
 
 type DetailRow = {
@@ -222,6 +234,15 @@ type DetailRow = {
     who_its_for: string | null;
     considerations: string | null;
     status: string;
+    announcement: string | null;
+    hero_headline: string | null;
+    hero_subtitle: string | null;
+    brand: string | null;
+    manufacturer: string | null;
+    sections: unknown;
+    theme: unknown;
+    sources: unknown;
+    last_reviewed_at: string | null;
   } | null;
   product_images: { storage_path: string; alt_text: string | null; is_primary: boolean; position: number }[] | null;
   product_benefits: { id: string; title: string; description: string | null; position: number }[] | null;
@@ -241,7 +262,8 @@ export const getPublicProduct = cache(cachedPublic("products:getPublicProduct", 
     .select(
       `
       id, name, slug, updated_at,
-      product_content!inner(overview, how_it_works, usage, who_its_for, considerations, status),
+      product_content!inner(overview, how_it_works, usage, who_its_for, considerations, status,
+        announcement, hero_headline, hero_subtitle, brand, manufacturer, sections, theme, sources, last_reviewed_at),
       product_images(storage_path, alt_text, is_primary, position),
       product_benefits(id, title, description, position),
       product_ingredients(id, name, description, position),
@@ -283,8 +305,29 @@ export const getPublicProduct = cache(cachedPublic("products:getPublicProduct", 
     categories: (row.product_categories ?? [])
       .map((pc) => pc.categories)
       .filter((c): c is { id: string; name: string; slug: string } => c !== null),
+    announcement: row.product_content?.announcement ?? null,
+    heroHeadline: row.product_content?.hero_headline ?? null,
+    heroSubtitle: row.product_content?.hero_subtitle ?? null,
+    brand: row.product_content?.brand ?? null,
+    manufacturer: row.product_content?.manufacturer ?? null,
+    sections: row.product_content?.sections ?? [],
+    theme: row.product_content?.theme ?? {},
+    sources: row.product_content?.sources ?? [],
+    lastReviewedAt: row.product_content?.last_reviewed_at ?? null,
   };
 }));
+
+// Whether an active, eligible product has an active affiliate link — a
+// boolean only, from the same public directory function the listing uses
+// (get_public_products). The destination itself is never read here; only
+// /go/[slug] resolves it.
+export const getPublicProductHasLink = cachedPublic("products:getPublicProductHasLink", [TAGS.products], TTL.detail, async (slug: string): Promise<boolean> => {
+  if (!slug) return false;
+  const supabase = createPublicClient();
+  const { data, error } = await supabase.rpc("get_public_products", { p_limit: 24, p_offset: 0, p_search: slug });
+  if (error) throw new Error(`Failed to check product link: ${error.message}`);
+  return (data ?? []).some((row) => row.slug === slug && row.has_affiliate_link === true);
+});
 
 export const getRelatedProducts = cachedPublic("products:getRelatedProducts", [TAGS.products, TAGS.categories], TTL.detail, async (productId: string, categoryIds: string[], limit: number = 4): Promise<PublicProductSummary[]> => {
   if (categoryIds.length === 0) return [];

@@ -46,6 +46,16 @@ export default async function ProductPage(props: PageProps<"/admin/products/[id]
               ) : (
                 <span className="text-xs text-ink-subtle">Not on the public site yet</span>
               )}
+              {product.contentStatus && (
+                <a
+                  href={`/admin/preview/${product.id}`}
+                  target="_blank"
+                  rel="noopener"
+                  className="text-xs font-medium text-brand-700 underline underline-offset-2 hover:text-brand-800"
+                >
+                  Preview landing page
+                </a>
+              )}
             </div>
           </div>
           <ProductStatusControls

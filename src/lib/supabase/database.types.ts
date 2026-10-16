@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   graphql_public: {
     Tables: {
@@ -520,39 +520,75 @@ export type Database = {
       }
       product_content: {
         Row: {
+          announcement: string | null
+          approved_at: string | null
+          brand: string | null
           considerations: string | null
           created_at: string
+          editorial_status: Database["public"]["Enums"]["editorial_status"]
+          hero_headline: string | null
+          hero_subtitle: string | null
           how_it_works: string | null
           id: string
+          last_reviewed_at: string | null
+          manufacturer: string | null
           overview: string | null
           product_id: string
+          sections: Json
+          sources: Json
           status: Database["public"]["Enums"]["content_status"]
+          submitted_at: string | null
+          theme: Json
           updated_at: string
           updated_by: string | null
           usage: string | null
           who_its_for: string | null
         }
         Insert: {
+          announcement?: string | null
+          approved_at?: string | null
+          brand?: string | null
           considerations?: string | null
           created_at?: string
+          editorial_status?: Database["public"]["Enums"]["editorial_status"]
+          hero_headline?: string | null
+          hero_subtitle?: string | null
           how_it_works?: string | null
           id?: string
+          last_reviewed_at?: string | null
+          manufacturer?: string | null
           overview?: string | null
           product_id: string
+          sections?: Json
+          sources?: Json
           status?: Database["public"]["Enums"]["content_status"]
+          submitted_at?: string | null
+          theme?: Json
           updated_at?: string
           updated_by?: string | null
           usage?: string | null
           who_its_for?: string | null
         }
         Update: {
+          announcement?: string | null
+          approved_at?: string | null
+          brand?: string | null
           considerations?: string | null
           created_at?: string
+          editorial_status?: Database["public"]["Enums"]["editorial_status"]
+          hero_headline?: string | null
+          hero_subtitle?: string | null
           how_it_works?: string | null
           id?: string
+          last_reviewed_at?: string | null
+          manufacturer?: string | null
           overview?: string | null
           product_id?: string
+          sections?: Json
+          sources?: Json
           status?: Database["public"]["Enums"]["content_status"]
+          submitted_at?: string | null
+          theme?: Json
           updated_at?: string
           updated_by?: string | null
           usage?: string | null
@@ -969,7 +1005,12 @@ export type Database = {
         }[]
       }
       get_public_products: {
-        Args: { p_category_id?: string; p_limit?: number; p_offset?: number; p_search?: string }
+        Args: {
+          p_category_id?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+        }
         Returns: {
           categories: Json
           created_at: string
@@ -990,6 +1031,9 @@ export type Database = {
       }
       is_agency: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
+      is_valid_landing_sections: { Args: { sections: Json }; Returns: boolean }
+      is_valid_landing_sources: { Args: { sources: Json }; Returns: boolean }
+      is_valid_product_theme: { Args: { theme: Json }; Returns: boolean }
       next_unique_slug: {
         Args: { p_base: string; p_exclude_id?: string; p_table: string }
         Returns: string
@@ -1035,6 +1079,7 @@ export type Database = {
     Enums: {
       content_status: "draft" | "published"
       device_type: "mobile" | "tablet" | "desktop" | "unknown"
+      editorial_status: "not_started" | "draft" | "needs_review" | "approved"
       product_status: "new" | "active" | "paused" | "archived"
       redirect_type: "301" | "302"
       seo_entity_type:
@@ -1177,6 +1222,7 @@ export const Constants = {
     Enums: {
       content_status: ["draft", "published"],
       device_type: ["mobile", "tablet", "desktop", "unknown"],
+      editorial_status: ["not_started", "draft", "needs_review", "approved"],
       product_status: ["new", "active", "paused", "archived"],
       redirect_type: ["301", "302"],
       seo_entity_type: [

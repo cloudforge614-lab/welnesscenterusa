@@ -2,6 +2,18 @@ import type { Database } from "@/lib/supabase/database.types";
 
 export type ProductStatus = Database["public"]["Enums"]["product_status"];
 export type ContentStatus = Database["public"]["Enums"]["content_status"];
+export type EditorialStatus = Database["public"]["Enums"]["editorial_status"];
+
+// The landing-page workflow (migration 0026): Draft → Needs review →
+// Approved → Published. "Published" is editorial_status = 'approved' plus
+// product_content.status = 'published'; the database enforces the order.
+export function editorialMeta(editorial: EditorialStatus | null, content: ContentStatus | null): { label: string; tone: Tone } {
+  if (content === "published") return { label: "Published", tone: "brand" };
+  if (editorial === "approved") return { label: "Approved, not published", tone: "brand" };
+  if (editorial === "needs_review") return { label: "Needs review", tone: "amber" };
+  if (editorial === "draft") return { label: "Draft", tone: "sky" };
+  return { label: "Not started", tone: "stone" };
+}
 
 export type Tone = "brand" | "amber" | "sky" | "rose" | "stone";
 
