@@ -65,30 +65,6 @@ export function headingText(text: string) {
   return text.replace(/\*([^*]+)\*/g, "$1");
 }
 
-/** "[1] [2]" links to the numbered source list, for claim attribution. */
-export function SourceRefs({ refs, inline = false, currentColor = false }: { refs: number[]; inline?: boolean; currentColor?: boolean }) {
-  if (refs.length === 0) return null;
-  return (
-    <span className={inline ? "whitespace-nowrap" : "ml-1 whitespace-nowrap align-super text-[0.7em] font-medium"}>
-      {refs.map((n) => (
-        <a
-          key={n}
-          href={`#source-${n}`}
-          className={cx(
-            "mr-0.5 underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-current",
-            // On a coloured panel the theme primary is not contrast-checked
-            // against the panel, so inherit the panel's text colour.
-            currentColor ? "text-current underline" : "text-[var(--lp-primary)]",
-          )}
-          aria-label={`Source ${n}`}
-        >
-          [{n}]
-        </a>
-      ))}
-    </span>
-  );
-}
-
 export function Markdown({ source, className }: { source: string; className?: string }) {
   return <div className={cx("prose-content lp-prose", className)} dangerouslySetInnerHTML={{ __html: renderMarkdown(source) }} />;
 }
@@ -105,14 +81,13 @@ const BAND_BG: Record<Band, string> = {
   dark: "bg-[var(--lp-primary)] text-[var(--lp-surface)]",
 };
 
-/** A full-width A+ band with the standard header (eyebrow, accent heading, intro, sources). */
+/** A full-width A+ band with the standard header (eyebrow, accent heading, intro). */
 export function Band({
   id,
   band,
   eyebrow,
   heading,
   intro,
-  sourceRefs = [],
   center = false,
   narrow = false,
   children,
@@ -122,7 +97,6 @@ export function Band({
   eyebrow?: string | null;
   heading: string;
   intro?: string | null;
-  sourceRefs?: number[];
   center?: boolean;
   narrow?: boolean;
   children?: ReactNode;
@@ -142,11 +116,6 @@ export function Band({
           >
             <AccentHeading text={heading} />
           </h2>
-          {sourceRefs.length > 0 && (
-            <p className={cx("mt-3 text-xs font-medium", dark ? "text-[var(--lp-surface)]/80" : "text-[var(--lp-muted)]")}>
-              Sources: <SourceRefs refs={sourceRefs} inline currentColor={dark} />
-            </p>
-          )}
           {intro && <Markdown source={intro} className={cx("mt-5 text-lg", dark && "lp-prose-dark")} />}
         </header>
         {children && <div className="mt-10 sm:mt-12">{children}</div>}
@@ -223,7 +192,7 @@ const TAG_TONE = {
 } as const;
 
 export function LandingSectionView({ section, band, sources }: { section: LandingSection; band: Band; sources: LandingSource[] }) {
-  const head = { id: section.id, eyebrow: section.eyebrow, heading: section.heading, intro: section.intro, sourceRefs: section.sourceRefs };
+  const head = { id: section.id, eyebrow: section.eyebrow, heading: section.heading, intro: section.intro };
 
   switch (section.kind) {
     case "prose":
@@ -344,11 +313,6 @@ export function LandingSectionView({ section, band, sources }: { section: Landin
                   <h2 id={`${section.id}-heading`} className="font-display text-2xl leading-tight sm:text-3xl">
                     {headingText(section.heading)}
                   </h2>
-                  {section.sourceRefs.length > 0 && (
-                    <p className="mt-2 text-xs font-medium">
-                      Sources: <SourceRefs refs={section.sourceRefs} inline currentColor />
-                    </p>
-                  )}
                   <div className="mt-4 text-[15px] leading-relaxed">
                     <Markdown source={section.body} />
                   </div>
@@ -375,11 +339,6 @@ export function LandingSectionView({ section, band, sources }: { section: Landin
                 </div>
               ))}
             </dl>
-            {section.sourceRefs.length > 0 && (
-              <p className="mt-8 text-center text-xs text-[var(--lp-surface)]/80">
-                Sources: <SourceRefs refs={section.sourceRefs} inline currentColor />
-              </p>
-            )}
           </div>
         </section>
       );
@@ -400,7 +359,14 @@ export function LandingSectionView({ section, band, sources }: { section: Landin
             <figure className="mt-10 rounded-3xl border border-black/[0.07] bg-[var(--lp-surface)] p-7 sm:p-10">
               <blockquote className="font-display text-2xl italic leading-snug text-[var(--lp-text)] sm:text-3xl">&ldquo;{section.quote.text}&rdquo;</blockquote>
               <figcaption className="mt-5 text-sm font-medium text-[var(--lp-muted)]">
-                — {section.quote.cite} <SourceRefs refs={[section.quote.sourceRef]} inline />
+                —{" "}
+                {sources[section.quote.sourceRef - 1] ? (
+                  <a href={sources[section.quote.sourceRef - 1].url} rel="nofollow noopener noreferrer" target="_blank" className="underline underline-offset-2">
+                    {section.quote.cite}
+                  </a>
+                ) : (
+                  section.quote.cite
+                )}
               </figcaption>
             </figure>
           )}
@@ -476,7 +442,7 @@ export function LandingSectionView({ section, band, sources }: { section: Landin
                   {src && (
                     <p className="mt-1 text-xs text-[var(--lp-muted)]">
                       Published on{" "}
-                      <a href={`#source-${r.sourceRef}`} className="underline underline-offset-2">
+                      <a href={src.url} rel="nofollow noopener noreferrer" target="_blank" className="underline underline-offset-2">
                         {src.label}
                       </a>
                     </p>
@@ -513,7 +479,7 @@ export function LandingSectionView({ section, band, sources }: { section: Landin
 }
 
 /** The compact hero trust strip (a stats section with placement "hero"). */
-export function StatStrip({ items, sourceRefs }: { items: { value: string; label: string }[]; sourceRefs: number[] }) {
+export function StatStrip({ items }: { items: { value: string; label: string }[] }) {
   return (
     <div className="mt-10">
       <dl className={cx("grid grid-cols-2 gap-y-6", items.length >= 4 ? "sm:grid-cols-4" : "sm:grid-cols-3")}>
@@ -524,11 +490,6 @@ export function StatStrip({ items, sourceRefs }: { items: { value: string; label
           </div>
         ))}
       </dl>
-      {sourceRefs.length > 0 && (
-        <p className="mt-3 text-xs text-[var(--lp-muted)]">
-          Sources: <SourceRefs refs={sourceRefs} inline />
-        </p>
-      )}
     </div>
   );
 }

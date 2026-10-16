@@ -12,7 +12,8 @@ import { AccentHeading, Band, Eyebrow, Icon, LandingSectionView, StatStrip, type
 //
 // Layout: a hero (eyebrow, accent headline, CTAs, trust badges, stat strip),
 // then the editor's ordered sections as full-width alternating bands, then
-// key features, materials, the details, FAQ, sources and a dark final CTA.
+// key features, materials, the details, FAQ and a dark final CTA. Sources are
+// kept with the content for editorial review but are not listed on the page.
 //
 // Server Component throughout. The only interactivity (FAQ disclosure) uses
 // native <details>, and the mobile sticky CTA is plain CSS, so the page ships
@@ -23,14 +24,6 @@ import { AccentHeading, Band, Eyebrow, Icon, LandingSectionView, StatStrip, type
 //
 // HEADINGS: exactly one <h1> (it carries the product name, so the page's
 // primary topic is the product entity), then an <h2> per band.
-
-const SOURCE_KIND_LABEL: Record<string, string> = {
-  manufacturer: "Manufacturer",
-  independent: "Independent research",
-  regulatory: "Regulatory",
-  retailer: "Retailer listing",
-  other: "Reference",
-};
 
 export function LandingPage({
   data,
@@ -124,7 +117,7 @@ export function LandingPage({
                 ))}
               </ul>
             )}
-            {heroStats?.kind === "stats" && <StatStrip items={heroStats.items} sourceRefs={heroStats.sourceRefs} />}
+            {heroStats?.kind === "stats" && <StatStrip items={heroStats.items} />}
           </div>
           <div>
             <div className="relative aspect-square w-full overflow-hidden rounded-[2rem] border border-black/[0.07] bg-white shadow-[0_30px_60px_-30px_rgba(0,0,0,0.35)]">
@@ -245,49 +238,6 @@ export function LandingPage({
             ))}
           </div>
         </Band>
-      )}
-
-      {/* ── Things to consider + sources ─────────────────────────────────── */}
-      {(data.considerations || data.sources.length > 0) && (
-        <section className="bg-[var(--lp-background)] py-16 sm:py-20">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-2">
-            {data.considerations && (
-              <section aria-labelledby="considerations-heading">
-                <Eyebrow>Before you buy</Eyebrow>
-                <h2 id="considerations-heading" className="mt-3 font-display text-3xl text-[var(--lp-primary)]">
-                  Things to consider
-                </h2>
-                <p className="mt-5 whitespace-pre-line leading-relaxed">{data.considerations}</p>
-              </section>
-            )}
-            {data.sources.length > 0 && (
-              <section id="sources" aria-labelledby="sources-heading" className="scroll-mt-20">
-                <Eyebrow>How we checked this</Eyebrow>
-                <h2 id="sources-heading" className="mt-3 font-display text-3xl text-[var(--lp-primary)]">
-                  Sources and how we checked this
-                </h2>
-                <p className="mt-3 text-sm leading-relaxed text-[var(--lp-muted)]">
-                  Manufacturer statements are attributed to the manufacturer. Numbers in brackets throughout this page link to the source for
-                  that section.
-                </p>
-                <ol className="mt-5 space-y-3">
-                  {data.sources.map((src, i) => (
-                    <li key={i} id={`source-${i + 1}`} className="scroll-mt-20 text-sm leading-relaxed">
-                      <span className="font-semibold">[{i + 1}]</span>{" "}
-                      <a href={src.url} rel="nofollow noopener noreferrer" target="_blank" className="text-[var(--lp-primary)] underline underline-offset-2 [overflow-wrap:anywhere]">
-                        {src.label}
-                      </a>{" "}
-                      <span className="text-[var(--lp-muted)]">
-                        — {SOURCE_KIND_LABEL[src.kind] ?? "Reference"}
-                        {src.accessed ? `, accessed ${src.accessed}` : ""}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            )}
-          </div>
-        </section>
       )}
 
       {/* ── Final CTA ────────────────────────────────────────────────────── */}

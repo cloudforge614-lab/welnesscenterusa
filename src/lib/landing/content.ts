@@ -270,7 +270,8 @@ export type WordCountInput = {
 
 export function landingWordCount(c: WordCountInput): number {
   let n = 0;
-  for (const t of [c.heroHeadline, c.heroSubtitle, c.overview, c.howItWorks, c.usage, c.whoItsFor, c.considerations]) n += countWords(t);
+  // considerations is stored but not shown on the page, so it is not counted.
+  for (const t of [c.heroHeadline, c.heroSubtitle, c.overview, c.howItWorks, c.usage, c.whoItsFor]) n += countWords(t);
   for (const s of c.sections) {
     n += countWords(s.heading) + countWords(s.intro);
     if (s.kind === "prose" || s.kind === "callout") n += countWords(s.body);
