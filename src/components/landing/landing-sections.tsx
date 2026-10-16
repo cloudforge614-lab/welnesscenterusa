@@ -359,14 +359,7 @@ export function LandingSectionView({ section, band, sources }: { section: Landin
             <figure className="mt-10 rounded-3xl border border-black/[0.07] bg-[var(--lp-surface)] p-7 sm:p-10">
               <blockquote className="font-display text-2xl italic leading-snug text-[var(--lp-text)] sm:text-3xl">&ldquo;{section.quote.text}&rdquo;</blockquote>
               <figcaption className="mt-5 text-sm font-medium text-[var(--lp-muted)]">
-                —{" "}
-                {sources[section.quote.sourceRef - 1] ? (
-                  <a href={sources[section.quote.sourceRef - 1].url} rel="nofollow noopener noreferrer" target="_blank" className="underline underline-offset-2">
-                    {section.quote.cite}
-                  </a>
-                ) : (
-                  section.quote.cite
-                )}
+                — {section.quote.cite}
               </figcaption>
             </figure>
           )}
@@ -439,14 +432,7 @@ export function LandingSectionView({ section, band, sources }: { section: Landin
                     {r.name}
                     {r.location && <span className="font-normal text-[var(--lp-muted)]"> · {r.location}</span>}
                   </p>
-                  {src && (
-                    <p className="mt-1 text-xs text-[var(--lp-muted)]">
-                      Published on{" "}
-                      <a href={src.url} rel="nofollow noopener noreferrer" target="_blank" className="underline underline-offset-2">
-                        {src.label}
-                      </a>
-                    </p>
-                  )}
+                  {src && <p className="mt-1 text-xs text-[var(--lp-muted)]">Published on {src.label.split(" — ")[0]}</p>}
                 </li>
               );
             })}
