@@ -33,7 +33,7 @@ export function ReviewerByline() {
 /** Full reviewer card with photo and bio. */
 export function ReviewerCard() {
   return (
-    <section id="clinical-reviewer" aria-labelledby="clinical-reviewer-heading" className="rounded-3xl border border-black/[0.07] bg-white p-6 sm:p-8">
+    <section id="clinical-reviewer" aria-labelledby="clinical-reviewer-heading" className="lp-glass rounded-[20px] p-6 sm:p-8">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
         <Image
           src={REVIEWER.image}
@@ -44,7 +44,7 @@ export function ReviewerCard() {
         />
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--lp-muted)]">Clinical reviewer</p>
-          <h2 id="clinical-reviewer-heading" className="font-display mt-1 text-2xl leading-tight text-[var(--lp-text)]">
+          <h2 id="clinical-reviewer-heading" className="font-display mt-1 text-2xl font-extrabold leading-tight text-[var(--lp-primary)]">
             {REVIEWER.name}, {REVIEWER.credentials}
           </h2>
           <p className="mt-1 text-sm font-medium text-[var(--lp-muted)]">

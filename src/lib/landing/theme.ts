@@ -35,6 +35,24 @@ export const DEFAULT_THEME: ProductTheme = {
   ctaText: "#ffffff",
 };
 
+/**
+ * The one look every product landing page uses (navy, cyan accent, orange
+ * button, light-blue panels). Passes every rule in CONTRAST_RULES below.
+ * Per-product themes stored in the database are no longer applied to the
+ * public page; the template renders this palette for all products.
+ */
+export const LANDING_THEME: ProductTheme = {
+  primary: "#0f4c81",
+  secondary: "#e8f4fd",
+  accent: "#0873a8",
+  background: "#f8fafc",
+  surface: "#ffffff",
+  text: "#1f2937",
+  muted: "#4b5563",
+  cta: "#ff6b00",
+  ctaText: "#111827",
+};
+
 function channel(c: number): number {
   const s = c / 255;
   return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;

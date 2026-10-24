@@ -3,8 +3,8 @@ import { ProductImage } from "@/components/public/product-image";
 import { PlaceholderImage } from "@/components/public/ui";
 import { formatDate } from "@/lib/format";
 import type { LandingPageData } from "@/lib/landing/page-data";
-import { themeStyle } from "@/lib/landing/theme";
-import { ReviewerByline, ReviewerCard } from "./clinical-reviewer";
+import { LANDING_THEME, themeStyle } from "@/lib/landing/theme";
+import { REVIEWER, ReviewerCard } from "./clinical-reviewer";
 import { LandingCta } from "./landing-cta";
 import { AccentHeading, Band, Eyebrow, Icon, LandingSectionView, StatStrip, type Band as BandTone } from "./landing-sections";
 
@@ -19,7 +19,7 @@ import { AccentHeading, Band, Eyebrow, Icon, LandingSectionView, StatStrip, type
 // native <details>, and the mobile sticky CTA is plain CSS, so the page ships
 // no client JavaScript of its own.
 //
-// THEME: the product's validated palette is applied as CSS custom properties
+// THEME: every product uses LANDING_THEME, applied as CSS custom properties
 // on this wrapper only (.lp). Nothing global changes.
 //
 // HEADINGS: exactly one <h1> (it carries the product name, so the page's
@@ -63,79 +63,108 @@ export function LandingPage({
   const firstAnchor = body[0]?.id ?? details[0]?.id ?? null;
 
   return (
-    <div className="lp bg-[var(--lp-background)] pb-24 text-[var(--lp-text)] lg:pb-0" style={themeStyle(data.theme)}>
+    <div className="lp bg-[var(--lp-background)] pb-24 text-[var(--lp-text)] lg:pb-0" style={themeStyle(LANDING_THEME)}>
       {mode === "preview" && (
         <div role="status" className="bg-amber-soft px-4 py-2.5 text-center text-sm font-medium text-amber-ink">
           Preview — this draft is not public. Links to the official site are disabled.
         </div>
       )}
 
-      {data.announcement && (
-        <p className="bg-[var(--lp-primary)] px-4 py-2.5 text-center text-sm font-medium text-[var(--lp-surface)]">{data.announcement}</p>
-      )}
+      {/* Announcement bar: honest copy only (no discounts, deadlines or stock claims). */}
+      <div className="bg-[linear-gradient(90deg,var(--lp-primary),#0b7fb5)] px-4 py-2.5 text-center text-sm font-medium text-[var(--lp-surface)]">
+        {data.announcement ?? `Independent, evidence-first overview of ${product.name}`}
+        {showCta && mode !== "preview" && (
+          <>
+            {" "}
+            <a href={`/go/${product.slug}?cta=announcement`} rel="sponsored nofollow noopener" className="font-bold underline underline-offset-2 hover:opacity-90">
+              Visit the official site &rarr;
+            </a>
+          </>
+        )}
+      </div>
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <header className="relative overflow-hidden bg-[linear-gradient(160deg,var(--lp-secondary)_0%,var(--lp-background)_55%)]">
+      <header className="lp-hero-bg relative overflow-hidden">
         {breadcrumb && <div className="mx-auto max-w-6xl px-4 pt-5 sm:px-6">{breadcrumb}</div>}
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 pb-16 pt-8 sm:px-6 sm:pt-12 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-14 lg:pb-24">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 pb-14 pt-8 sm:px-6 sm:pt-12 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-14 lg:pb-20">
           <div>
-            <h1 className="[overflow-wrap:anywhere]">
-              <span className="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--lp-accent)]">
-                {[data.brand, category?.name].filter(Boolean).join(" · ") || "Product overview"}
-              </span>
-              <span className="mt-4 block font-display text-4xl leading-[1.05] tracking-tight text-[var(--lp-primary)] sm:text-6xl">
-                {product.name}
-              </span>
+            <p className="inline-flex rounded-full bg-[var(--lp-secondary)] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--lp-primary)]">
+              {[data.brand, category?.name].filter(Boolean).join(" · ") || "Product overview"}
+            </p>
+            <h1 className="mt-5 font-display text-4xl font-extrabold leading-[1.08] tracking-tight text-[var(--lp-primary)] sm:text-6xl [overflow-wrap:anywhere]">
+              {product.name}
             </h1>
             {data.heroHeadline && (
-              <p className="mt-5 font-display text-2xl leading-snug tracking-tight text-[var(--lp-text)] sm:text-3xl">
+              <p className="mt-4 font-display text-2xl font-bold leading-snug tracking-tight text-[var(--lp-text)] sm:text-3xl">
                 <AccentHeading text={data.heroHeadline} />
               </p>
             )}
             {data.heroSubtitle && <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-[var(--lp-muted)]">{data.heroSubtitle}</p>}
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              {showCta && <LandingCta slug={product.slug} mode={mode} location="product-page-primary" label={ctaLabel} />}
-              {firstAnchor && (
-                <a
-                  href={`#${firstAnchor}`}
-                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-black/15 bg-[var(--lp-surface)]/70 px-6 text-base font-medium text-[var(--lp-text)] transition hover:bg-[var(--lp-surface)] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--lp-text)]"
-                >
-                  Read the details
-                </a>
-              )}
-            </div>
-            {showCta && (
-              <p className="mt-3 text-xs leading-relaxed text-[var(--lp-muted)]">Opens the official store.</p>
-            )}
             {data.benefits.length > 0 && (
-              <ul className="mt-7 flex flex-wrap gap-2" aria-label="Highlights">
+              <ul className="mt-6 space-y-2.5" aria-label="Highlights">
                 {data.benefits.slice(0, 4).map((b) => (
-                  <li key={b.id} className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-[var(--lp-surface)]/80 px-3 py-1.5 text-xs font-medium text-[var(--lp-text)]">
-                    <Icon name="check" className="size-3.5 text-[var(--lp-accent)]" />
+                  <li key={b.id} className="flex items-start gap-3 text-[16px] font-medium text-[var(--lp-text)]">
+                    <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-[#d1fae5] text-[#166534]">
+                      <Icon name="check" className="size-3.5" />
+                    </span>
                     {b.title}
                   </li>
                 ))}
               </ul>
             )}
-            {heroStats?.kind === "stats" && <StatStrip items={heroStats.items} />}
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              {showCta && <LandingCta slug={product.slug} mode={mode} location="product-page-primary" label={ctaLabel} className="lp-pulse" />}
+              {firstAnchor && (
+                <a
+                  href={`#${firstAnchor}`}
+                  className="inline-flex min-h-13 items-center justify-center rounded-full border-2 border-[var(--lp-primary)] px-7 py-3 font-display text-base font-semibold text-[var(--lp-primary)] transition hover:bg-[var(--lp-secondary)] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--lp-text)]"
+                >
+                  Learn more
+                </a>
+              )}
+            </div>
+            <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--lp-muted)]" aria-label="About this page">
+              {["Independent overview", "Opens the official store", "Terms are set by the seller"].map((t) => (
+                <li key={t} className="inline-flex items-center gap-2">
+                  <span className="grid size-6 place-items-center rounded-full bg-[var(--lp-secondary)] text-[var(--lp-primary)]">
+                    <Icon name="shield" className="size-3.5" />
+                  </span>
+                  {t}
+                </li>
+              ))}
+            </ul>
           </div>
           <div>
-            <div className="relative aspect-square w-full overflow-hidden rounded-[2rem] border border-black/[0.07] bg-white shadow-[0_30px_60px_-30px_rgba(0,0,0,0.35)]">
+            <div className="lp-glass relative aspect-square w-full overflow-hidden rounded-[28px] shadow-[0_24px_60px_rgba(0,0,0,0.14)]">
               {primaryImage ? (
                 <ProductImage src={primaryImage.url} alt={primaryImage.alt ?? product.name} sizes="(min-width: 1024px) 520px, 92vw" priority className="p-6 sm:p-8" />
               ) : (
                 <PlaceholderImage className="h-full w-full" />
               )}
+              <a
+                href="#clinical-reviewer"
+                className="lp-glass absolute bottom-4 left-4 flex max-w-[calc(100%-2rem)] items-center gap-2.5 rounded-2xl px-3 py-2 text-xs text-[var(--lp-text)]"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- 32px static avatar */}
+                <img src={REVIEWER.image} alt="" width={32} height={32} className="size-8 rounded-full object-cover" />
+                <span className="leading-snug">
+                  Clinical review by{" "}
+                  <strong>
+                    {REVIEWER.name}, {REVIEWER.credentials}
+                  </strong>
+                </span>
+              </a>
             </div>
             {data.lastReviewedAt && (
               <p className="mt-4 text-center text-xs text-[var(--lp-muted)]">
                 Last reviewed <time dateTime={data.lastReviewedAt}>{formatDate(data.lastReviewedAt)}</time> by the Wellness Center USA editorial team
               </p>
             )}
-            <ReviewerByline />
           </div>
         </div>
       </header>
+
+      {heroStats?.kind === "stats" && <StatStrip items={heroStats.items} />}
 
       {/* ── Editorial bands (editor-ordered) ─────────────────────────────── */}
       {body.map((s, i) => (
@@ -143,8 +172,8 @@ export function LandingPage({
           <LandingSectionView section={s} band={bandFor(s.kind)} sources={data.sources} />
           {i === midCtaAfter && showCta && (
             <div className="bg-[var(--lp-background)] px-4 py-10">
-              <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 rounded-3xl border border-black/[0.07] bg-[var(--lp-surface)] p-6 text-center sm:flex-row sm:justify-between sm:p-8 sm:text-left">
-                <p className="font-display text-xl text-[var(--lp-primary)]">Want to check current availability and details?</p>
+              <div className="lp-glass mx-auto flex max-w-4xl flex-col items-center gap-4 rounded-[20px] p-6 text-center sm:flex-row sm:justify-between sm:p-8 sm:text-left">
+                <p className="font-display text-xl font-bold text-[var(--lp-primary)]">Want to check current availability and details?</p>
                 <LandingCta slug={product.slug} mode={mode} location="product-page-mid" label={ctaLabel} size="md" />
               </div>
             </div>
@@ -157,7 +186,7 @@ export function LandingPage({
         <Band id="key-features" band={nextBand()} eyebrow="At a glance" heading="Key features">
           <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {data.benefits.map((b) => (
-              <li key={b.id} className="rounded-3xl border border-black/[0.07] bg-[var(--lp-surface)] p-6 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.12)]">
+              <li key={b.id} className="lp-glass rounded-[20px] p-6">
                 <span className="grid size-10 place-items-center rounded-xl bg-[var(--lp-secondary)] text-[var(--lp-accent)]">
                   <Icon name="check" className="size-5" />
                 </span>
@@ -174,7 +203,7 @@ export function LandingPage({
         <Band id="materials" band={nextBand()} eyebrow="What it's made of" heading="Ingredients & materials">
           <dl className="grid gap-5 md:grid-cols-2">
             {data.ingredients.map((ing) => (
-              <div key={ing.id} className="rounded-3xl border border-black/[0.07] bg-[var(--lp-surface)] p-6">
+              <div key={ing.id} className="lp-glass rounded-[20px] p-6">
                 <dt className="flex items-center gap-3 text-lg font-semibold text-[var(--lp-text)]">
                   <Icon name="layers" className="text-[var(--lp-accent)]" />
                   {ing.name}
@@ -193,8 +222,8 @@ export function LandingPage({
             <Eyebrow>The details</Eyebrow>
             <div className="mt-6 grid gap-5 md:grid-cols-2">
               {details.map((d) => (
-                <section key={d.id} id={d.id} aria-labelledby={`${d.id}-heading`} className="scroll-mt-20 rounded-3xl border border-black/[0.07] bg-[var(--lp-surface)] p-6 sm:p-8">
-                  <h2 id={`${d.id}-heading`} className="font-display text-2xl text-[var(--lp-primary)] sm:text-3xl">
+                <section key={d.id} id={d.id} aria-labelledby={`${d.id}-heading`} className="lp-glass scroll-mt-20 rounded-[20px] p-6 sm:p-8">
+                  <h2 id={`${d.id}-heading`} className="font-display text-2xl font-extrabold text-[var(--lp-primary)] sm:text-3xl">
                     {d.title}
                   </h2>
                   <p className="mt-4 whitespace-pre-line text-[16px] leading-relaxed">{d.body}</p>
@@ -223,7 +252,7 @@ export function LandingPage({
         <Band id="faq" band={nextBand()} eyebrow="Common questions" heading="Frequently asked questions" narrow>
           {/* Native <details>: no JavaScript, keyboard- and screen-reader-accessible,
               and every answer stays in the HTML for crawlers. */}
-          <div className="divide-y divide-black/[0.08] rounded-3xl border border-black/[0.07] bg-[var(--lp-surface)]">
+          <div className="lp-glass divide-y divide-black/[0.08] rounded-[20px]">
             {data.faqs.map((f) => (
               <details key={f.id} className="group px-6 py-1">
                 <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-4 focus-visible:outline-2 focus-visible:outline-[var(--lp-text)]">
@@ -241,19 +270,40 @@ export function LandingPage({
         </Band>
       )}
 
+      {/* ── What happens after you click (generic, true for every product) ─ */}
+      {showCta && (
+        <Band id="after-click" band={nextBand()} eyebrow="Before you go" heading="What happens when *you click the button?*" center>
+          <ol className="mx-auto grid max-w-5xl gap-5 md:grid-cols-3">
+            {[
+              ["You go to the official store", "The button opens the seller's official page. This site never takes your payment details."],
+              ["Check the details there", "Price, availability, shipping and the guarantee are set by the seller and can change, so confirm them before you order."],
+              ["The seller handles your order", "Checkout, delivery and any refund request go through the seller and its customer support, not through us."],
+            ].map(([title, body], i) => (
+              <li key={i} className="lp-glass rounded-[20px] p-6 text-left">
+                <span aria-hidden className="grid size-10 place-items-center rounded-full bg-[var(--lp-primary)] font-display text-lg font-bold text-[var(--lp-surface)]">
+                  {i + 1}
+                </span>
+                <h3 className="mt-4 font-display text-lg font-bold leading-snug text-[var(--lp-primary)]">{title}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed text-[var(--lp-muted)]">{body}</p>
+              </li>
+            ))}
+          </ol>
+        </Band>
+      )}
+
       {/* ── Final CTA ────────────────────────────────────────────────────── */}
       {showCta && (
-        <section aria-labelledby="final-cta-heading" className="bg-[var(--lp-primary)] py-20 text-[var(--lp-surface)] sm:py-24">
+        <section aria-labelledby="final-cta-heading" className="lp-dark-bg py-20 text-[var(--lp-surface)] sm:py-24">
           <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-            <h2 id="final-cta-heading" className="font-display text-3xl leading-tight tracking-tight sm:text-5xl">
-              See {product.name} <em className="block italic opacity-90">on the official site.</em>
+            <h2 id="final-cta-heading" className="font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-5xl">
+              See {product.name} <span className="block text-[#7dd3fc]">on the official site.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-xl leading-relaxed text-[var(--lp-surface)]/85">
               Prices, availability and current return terms are set by the seller and can change — check them on the official site before you
               buy.
             </p>
             <div className="mt-8">
-              <LandingCta slug={product.slug} mode={mode} location="product-page-final" label={ctaLabel} />
+              <LandingCta slug={product.slug} mode={mode} location="product-page-final" label={ctaLabel} className="lp-pulse" />
             </div>
           </div>
         </section>
@@ -263,8 +313,8 @@ export function LandingPage({
       <div className="mx-auto max-w-6xl space-y-10 px-4 py-12 sm:px-6">
         <ReviewerCard />
         <div>
-          <div className="rounded-3xl border border-black/[0.07] bg-[var(--lp-surface)] p-6 text-sm leading-relaxed text-[var(--lp-muted)]">
-            <h2 className="font-display text-base text-[var(--lp-text)]">Editorial note</h2>
+          <div className="lp-glass rounded-[20px] p-6 text-sm leading-relaxed text-[var(--lp-muted)]">
+            <h2 className="font-display text-base font-bold text-[var(--lp-text)]">Editorial note</h2>
             <p className="mt-2">
               Information on this page reflects manufacturer statements, which are attributed as such, and our own research. It is provided for
               informational purposes and is not medical advice.

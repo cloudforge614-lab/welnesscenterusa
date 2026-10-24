@@ -49,7 +49,7 @@ export function AccentHeading({ text }: { text: string }) {
     <>
       {parts.map((part, i) =>
         i % 2 === 1 ? (
-          <em key={i} className="block font-display italic text-[var(--lp-accent)]">
+          <em key={i} className="block font-display font-extrabold not-italic text-[var(--lp-accent)]">
             {part}
           </em>
         ) : (
@@ -78,7 +78,7 @@ export function Eyebrow({ children, onDark = false }: { children: ReactNode; onD
 const BAND_BG: Record<Band, string> = {
   plain: "bg-[var(--lp-background)]",
   tint: "bg-[var(--lp-secondary)]",
-  dark: "bg-[var(--lp-primary)] text-[var(--lp-surface)]",
+  dark: "lp-dark-bg text-[var(--lp-surface)]",
 };
 
 /** A full-width A+ band with the standard header (eyebrow, accent heading, intro). */
@@ -110,7 +110,7 @@ export function Band({
           <h2
             id={`${id}-heading`}
             className={cx(
-              "mt-3 font-display text-3xl leading-[1.1] tracking-tight sm:text-5xl [overflow-wrap:anywhere]",
+              "mt-3 font-display text-3xl font-extrabold leading-[1.12] tracking-tight sm:text-[2.6rem] [overflow-wrap:anywhere]",
               dark ? "text-[var(--lp-surface)]" : "text-[var(--lp-primary)]",
             )}
           >
@@ -124,7 +124,7 @@ export function Band({
   );
 }
 
-const CARD = "rounded-3xl border border-black/[0.07] bg-[var(--lp-surface)] p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(0,0,0,0.12)] sm:p-7";
+const CARD = "lp-glass rounded-[20px] p-6 sm:p-7";
 
 function IconTile({ name }: { name: IconName }) {
   return (
@@ -224,7 +224,7 @@ export function LandingSectionView({ section, band, sources }: { section: Landin
           <ol className="grid gap-5 md:grid-cols-3">
             {section.items.map((item, i) => (
               <li key={i} className={cx(CARD, "relative")}>
-                <span aria-hidden className="font-display text-5xl leading-none text-[var(--lp-accent)]">
+                <span aria-hidden className="font-display text-5xl font-extrabold leading-none text-[var(--lp-accent)]">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <p className="mt-4 leading-relaxed [overflow-wrap:anywhere]">{item}</p>
@@ -251,7 +251,7 @@ export function LandingSectionView({ section, band, sources }: { section: Landin
                       scope="col"
                       className={cx(
                         "px-5 py-4 text-sm font-semibold",
-                        i === 1 ? "bg-[var(--lp-cta)] text-[var(--lp-cta-text)]" : "bg-[var(--lp-secondary)] text-[var(--lp-text)]",
+                        i === 1 ? "bg-[var(--lp-primary)] text-[var(--lp-surface)]" : "bg-[var(--lp-secondary)] text-[var(--lp-text)]",
                       )}
                     >
                       {col}
@@ -326,7 +326,7 @@ export function LandingSectionView({ section, band, sources }: { section: Landin
     case "stats":
       // placement "hero" is rendered by the hero itself (StatStrip).
       return (
-        <section id={section.id} aria-labelledby={`${section.id}-heading`} className="scroll-mt-20 bg-[var(--lp-primary)] py-14 text-[var(--lp-surface)] sm:py-16">
+        <section id={section.id} aria-labelledby={`${section.id}-heading`} className="lp-dark-bg scroll-mt-20 py-14 text-[var(--lp-surface)] sm:py-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <h2 id={`${section.id}-heading`} className={cx(section.eyebrow ? "text-center text-xs font-semibold uppercase tracking-[0.2em] text-[var(--lp-surface)]/80" : "sr-only")}>
               {section.eyebrow ?? headingText(section.heading)}
@@ -356,8 +356,8 @@ export function LandingSectionView({ section, band, sources }: { section: Landin
             ))}
           </ul>
           {section.quote && (
-            <figure className="mt-10 rounded-3xl border border-black/[0.07] bg-[var(--lp-surface)] p-7 sm:p-10">
-              <blockquote className="font-display text-2xl italic leading-snug text-[var(--lp-text)] sm:text-3xl">&ldquo;{section.quote.text}&rdquo;</blockquote>
+            <figure className="lp-glass mt-10 rounded-[20px] border-l-4 !border-l-[var(--lp-accent)] p-7 sm:p-10">
+              <blockquote className="font-display text-xl font-semibold leading-snug text-[var(--lp-primary)] sm:text-2xl">&ldquo;{section.quote.text}&rdquo;</blockquote>
               <figcaption className="mt-5 text-sm font-medium text-[var(--lp-muted)]">
                 — {section.quote.cite}
               </figcaption>
@@ -393,10 +393,10 @@ export function LandingSectionView({ section, band, sources }: { section: Landin
     case "features":
       return (
         <Band {...head} band={band}>
-          <ol className="divide-y divide-black/[0.08] border-y border-black/[0.08]">
+          <ol className="space-y-5">
             {section.items.map((item, i) => (
-              <li key={i} className="grid gap-5 py-8 sm:grid-cols-[5rem_1fr] sm:py-10 lg:grid-cols-[5rem_1fr_auto] lg:items-start">
-                <span aria-hidden className="font-display text-5xl leading-none text-[var(--lp-accent)] sm:text-6xl">
+              <li key={i} className={cx(CARD, "grid gap-5 sm:grid-cols-[5rem_1fr] sm:!p-8 lg:grid-cols-[5rem_1fr_auto] lg:items-start")}>
+                <span aria-hidden className="font-display text-5xl font-extrabold leading-none text-[var(--lp-accent)] sm:text-6xl">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <div className="min-w-0">
@@ -464,15 +464,15 @@ export function LandingSectionView({ section, band, sources }: { section: Landin
   }
 }
 
-/** The compact hero trust strip (a stats section with placement "hero"). */
+/** The full-width stat strip under the hero (a stats section with placement "hero"). */
 export function StatStrip({ items }: { items: { value: string; label: string }[] }) {
   return (
-    <div className="mt-10">
-      <dl className={cx("grid grid-cols-2 gap-y-6", items.length >= 4 ? "sm:grid-cols-4" : "sm:grid-cols-3")}>
+    <div className="border-y border-black/[0.07] bg-[var(--lp-surface)]">
+      <dl className={cx("mx-auto grid max-w-6xl grid-cols-2 gap-y-6 px-4 py-8 sm:px-6", items.length >= 4 ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
         {items.map((item, i) => (
-          <div key={i} className={cx("flex flex-col-reverse pr-4", i % 2 === 1 && "border-l border-black/10 pl-4", i > 0 && "sm:border-l sm:border-black/10 sm:pl-5")}>
-            <dt className="mt-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--lp-muted)]">{item.label}</dt>
-            <dd className="text-2xl font-bold tracking-tight text-[var(--lp-text)] lg:text-[1.7rem]">{item.value}</dd>
+          <div key={i} className={cx("flex flex-col-reverse px-4 text-center", i % 2 === 1 && "border-l border-black/10", i > 0 && "lg:border-l lg:border-black/10")}>
+            <dt className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--lp-muted)]">{item.label}</dt>
+            <dd className="font-display text-3xl font-extrabold tracking-tight text-[var(--lp-primary)] sm:text-4xl [overflow-wrap:anywhere]">{item.value}</dd>
           </div>
         ))}
       </dl>

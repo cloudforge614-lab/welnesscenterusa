@@ -31,7 +31,7 @@ export function LandingCta({
   className?: string;
 }) {
   const classes = cx(
-    "inline-flex items-center justify-center gap-2 rounded-full font-semibold shadow-pop transition",
+    "inline-flex items-center justify-center gap-2 rounded-full font-display font-bold shadow-pop transition",
     "bg-[var(--lp-cta)] text-[var(--lp-cta-text)] hover:opacity-90",
     "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--lp-text)]",
     size === "lg" ? "min-h-13 px-8 py-3.5 text-base" : "min-h-11 px-6 py-2.5 text-sm",
