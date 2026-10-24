@@ -9,8 +9,9 @@ import { formatDate } from "@/lib/format";
 import { safeJsonLd } from "@/lib/content/json-ld";
 import { ORGANIZATION_REF } from "@/lib/seo/structured-data";
 import { ogImages, TWITTER_CARD, twitterImages } from "@/lib/seo/og";
-import { renderMarkdown } from "@/lib/content/markdown";
-import { getArticleSeoMetadata, getPublicArticle, type PublicArticleDetail } from "@/lib/articles/public-queries";
+import { extractH2Headings, renderMarkdown } from "@/lib/content/markdown";
+import { ContentLinkSection } from "@/components/public/content-link-section";
+import { getArticleSeoMetadata, getLatestPublicArticles, getPublicArticle, type PublicArticleDetail } from "@/lib/articles/public-queries";
 
 // Publicly cacheable. Editorial actions invalidate this immediately through
 // the cache tags declared on the queries below, so this TTL is only a
@@ -67,6 +68,8 @@ export default async function ArticlePage(props: PageProps<"/blog/[slug]">) {
   const canonical = `${siteUrl}/blog/${article.slug}`;
   const jsonLd = buildJsonLd(article, canonical);
   const html = renderMarkdown(article.content);
+  const headings = extractH2Headings(html);
+  const moreArticles = (await getLatestPublicArticles(4)).filter((a) => a.id !== article.id).slice(0, 3);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
@@ -75,14 +78,22 @@ export default async function ArticlePage(props: PageProps<"/blog/[slug]">) {
       <nav aria-label="Breadcrumb" className="text-sm text-ink-muted">
         <ol className="flex flex-wrap items-center gap-1.5">
           <li>
+            <Link href="/" className="inline-flex min-h-11 items-center hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100">
+              Home
+            </Link>
+          </li>
+          <li aria-hidden>/</li>
+          <li>
             <Link href="/blog" className="inline-flex min-h-11 items-center hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100">
               Blog
             </Link>
           </li>
-          <li aria-hidden>/</li>
-          <li className="text-ink" aria-current="page">
-            {article.title}
-          </li>
+          {article.category && (
+            <>
+              <li aria-hidden>/</li>
+              <li>{article.category.name}</li>
+            </>
+          )}
         </ol>
       </nav>
 
@@ -92,7 +103,15 @@ export default async function ArticlePage(props: PageProps<"/blog/[slug]">) {
         </div>
       )}
       <h1 className="mt-3 font-display text-3xl leading-tight text-ink sm:text-4xl">{article.title}</h1>
-      {article.publishedAt && <p className="mt-2 text-sm text-ink-muted">{formatDate(article.publishedAt)}</p>}
+      <p className="mt-2 text-sm text-ink-muted">
+        By the Wellness Center USA editorial team
+        {article.publishedAt && (
+          <>
+            {" "}
+            · <time dateTime={article.publishedAt}>{formatDate(article.publishedAt)}</time>
+          </>
+        )}
+      </p>
 
       {article.featuredImagePath && (
         <div className="mt-6 overflow-hidden rounded-2xl border border-line bg-surface shadow-card">
@@ -101,6 +120,23 @@ export default async function ArticlePage(props: PageProps<"/blog/[slug]">) {
             <img src={article.featuredImagePath} alt={article.title} className="h-full w-full object-cover" />
           </div>
         </div>
+      )}
+
+      {headings.length >= 3 && (
+        <nav aria-labelledby="toc-heading" className="mt-8 rounded-2xl border border-line bg-sunken p-5">
+          <h2 id="toc-heading" className="font-display text-lg text-ink">
+            In this article
+          </h2>
+          <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-[15px] text-brand-700">
+            {headings.map((h) => (
+              <li key={h.id}>
+                <a href={`#${h.id}`} className="underline underline-offset-2 hover:text-brand-800">
+                  {h.text.replace(/^\d+\.\s*/, "")}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
       )}
 
       {html ? (
@@ -132,6 +168,8 @@ export default async function ArticlePage(props: PageProps<"/blog/[slug]">) {
           </div>
         </section>
       )}
+
+      {moreArticles.length > 0 && <ContentLinkSection id="more-articles-heading" title="Related articles" items={moreArticles} hrefFor={(a) => `/blog/${a.slug}`} labelFor={(a) => a.title} />}
     </div>
   );
 }

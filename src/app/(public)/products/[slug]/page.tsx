@@ -148,7 +148,7 @@ export default async function ProductPage(props: PageProps<"/products/[slug]">) 
               <ContentLinkSection id="guides-heading" title="Featured in guides" items={productGuides} hrefFor={(g) => `/guides/${g.slug}`} labelFor={(g) => g.title} />
             )}
             {productArticles.length > 0 && (
-              <ContentLinkSection id="articles-heading" title="Mentioned in articles" items={productArticles} hrefFor={(a) => `/blog/${a.slug}`} labelFor={(a) => a.title} />
+              <ContentLinkSection id="articles-heading" title="Related reading" items={productArticles} hrefFor={(a) => `/blog/${a.slug}`} labelFor={(a) => a.title} />
             )}
           </>
         }

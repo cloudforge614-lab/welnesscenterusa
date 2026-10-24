@@ -111,7 +111,10 @@ function ArticleCard({ article }: { article: PublicArticleSummary }) {
           )}
           <h2 className="font-display text-lg leading-snug text-ink">{article.title}</h2>
           {article.excerpt && <p className="mt-2 text-sm leading-relaxed text-ink-muted">{article.excerpt}</p>}
-          {article.publishedAt && <p className="mt-3 text-xs text-ink-subtle">{formatDate(article.publishedAt)}</p>}
+          <div className="mt-4 flex items-center justify-between gap-3">
+            {article.publishedAt ? <p className="text-xs text-ink-subtle">{formatDate(article.publishedAt)}</p> : <span />}
+            <span className="inline-flex min-h-9 items-center rounded-lg border border-line-strong px-3 text-sm font-medium text-ink">Read more +</span>
+          </div>
         </div>
       </Link>
     </li>
