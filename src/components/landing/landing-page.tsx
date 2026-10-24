@@ -4,6 +4,7 @@ import { PlaceholderImage } from "@/components/public/ui";
 import { formatDate } from "@/lib/format";
 import type { LandingPageData } from "@/lib/landing/page-data";
 import { themeStyle } from "@/lib/landing/theme";
+import { ReviewerByline, ReviewerCard } from "./clinical-reviewer";
 import { LandingCta } from "./landing-cta";
 import { AccentHeading, Band, Eyebrow, Icon, LandingSectionView, StatStrip, type Band as BandTone } from "./landing-sections";
 
@@ -131,6 +132,7 @@ export function LandingPage({
                 Last reviewed <time dateTime={data.lastReviewedAt}>{formatDate(data.lastReviewedAt)}</time> by the Wellness Center USA editorial team
               </p>
             )}
+            <ReviewerByline />
           </div>
         </div>
       </header>
@@ -259,6 +261,7 @@ export function LandingPage({
 
       {/* ── Editorial note + related ─────────────────────────────────────── */}
       <div className="mx-auto max-w-6xl space-y-10 px-4 py-12 sm:px-6">
+        <ReviewerCard />
         <div>
           <div className="rounded-3xl border border-black/[0.07] bg-[var(--lp-surface)] p-6 text-sm leading-relaxed text-[var(--lp-muted)]">
             <h2 className="font-display text-base text-[var(--lp-text)]">Editorial note</h2>
