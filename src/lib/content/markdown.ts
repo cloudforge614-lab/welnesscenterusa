@@ -54,7 +54,7 @@ function slugifyHeading(text: string): string {
 // anything the sanitizer would have removed.
 function addHeadingIds(html: string): string {
   const seen = new Set<string>();
-  return html.replace(/<h([23])>([\s\S]*?)<\/h>/g, (_m, level: string, inner: string) => {
+  return html.replace(/<h([23])>([\s\S]*?)<\/h[23]>/g, (_m, level: string, inner: string) => {
     let id = slugifyHeading(inner.replace(/<[^>]+>/g, "")) || `section-${seen.size + 1}`;
     while (seen.has(id)) id += "-2";
     seen.add(id);
