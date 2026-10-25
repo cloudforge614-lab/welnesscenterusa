@@ -71,7 +71,7 @@ export function LandingPage({
       )}
 
       {/* Announcement bar: honest copy only (no discounts, deadlines or stock claims). */}
-      <div className="bg-[linear-gradient(90deg,var(--lp-primary),#0b7fb5)] px-4 py-2.5 text-center text-sm font-medium text-[var(--lp-surface)]">
+      <div className="bg-[linear-gradient(90deg,var(--lp-primary),#15803d)] px-4 py-2.5 text-center text-sm font-medium text-[var(--lp-surface)]">
         {data.announcement ?? `Independent, evidence-first overview of ${product.name}`}
         {showCta && mode !== "preview" && (
           <>
@@ -296,7 +296,7 @@ export function LandingPage({
         <section aria-labelledby="final-cta-heading" className="lp-dark-bg py-20 text-[var(--lp-surface)] sm:py-24">
           <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
             <h2 id="final-cta-heading" className="font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-5xl">
-              See {product.name} <span className="block text-[#7dd3fc]">on the official site.</span>
+              See {product.name} <span className="block text-[#86efac]">on the official site.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-xl leading-relaxed text-[var(--lp-surface)]/85">
               Prices, availability and current return terms are set by the seller and can change — check them on the official site before you

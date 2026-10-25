@@ -36,21 +36,21 @@ export const DEFAULT_THEME: ProductTheme = {
 };
 
 /**
- * The one look every product landing page uses (navy, cyan accent, orange
- * button, light-blue panels). Passes every rule in CONTRAST_RULES below.
+ * The one look every product landing page uses (deep green, green accent and
+ * button, pale-green panels). Passes every rule in CONTRAST_RULES below.
  * Per-product themes stored in the database are no longer applied to the
  * public page; the template renders this palette for all products.
  */
 export const LANDING_THEME: ProductTheme = {
-  primary: "#0f4c81",
-  secondary: "#e8f4fd",
-  accent: "#0873a8",
-  background: "#f8fafc",
+  primary: "#14532d",
+  secondary: "#e7f5ec",
+  accent: "#137536",
+  background: "#f7fbf8",
   surface: "#ffffff",
   text: "#1f2937",
   muted: "#4b5563",
-  cta: "#ff6b00",
-  ctaText: "#111827",
+  cta: "#15803d",
+  ctaText: "#ffffff",
 };
 
 function channel(c: number): number {
