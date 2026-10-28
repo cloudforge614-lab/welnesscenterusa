@@ -14,7 +14,7 @@ import sanitizeHtml from "sanitize-html";
 // for files this site itself serves from /blog-images/ (checked below), so
 // markdown can never pull in an off-site image or tracking pixel.
 const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
-  allowedTags: ["p", "br", "strong", "em", "a", "ul", "ol", "li", "h2", "h3", "h4", "blockquote", "code", "pre", "img"],
+  allowedTags: ["p", "br", "strong", "em", "a", "ul", "ol", "li", "h2", "h3", "h4", "blockquote", "code", "pre", "img", "table", "thead", "tbody", "tr", "th", "td"],
   allowedAttributes: {
     // rel/target are added by transformTags below, not by agency input — but
     // sanitize-html still strips any attribute not in this allowlist after
