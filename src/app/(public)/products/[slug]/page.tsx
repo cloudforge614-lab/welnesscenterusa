@@ -162,21 +162,29 @@ function buildJsonLd(product: PublicProductDetail, canonical: string) {
   const category = product.categories[0] ?? null;
   const description = product.heroSubtitle || product.overview;
 
-  // Only fields backed by real, published editorial content are emitted. No
-  // offers, price, availability, sku or aggregateRating: this site does not
-  // sell the product or hold verified ratings, and fabricating any of that
-  // would violate Google's structured data guidelines and this project's
-  // content rules. Brand only when an editor recorded it.
+  // This is an editorial overview page, not a store listing, so it is marked
+  // up as a WebPage that is *about* the product — not as a schema.org Product.
+  // Google's Product snippet rules require offers, review or aggregateRating on
+  // every Product item; this site holds no verified price, availability or
+  // rating (and must not fabricate any), so Product markup could only ever be
+  // reported as invalid in Search Console. A plain Thing carries the same
+  // honest facts (name, description, images, category) without those
+  // requirements. Only fields backed by real, published editorial content are
+  // emitted.
   const productLd: Record<string, unknown> = {
     "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
+    "@type": "WebPage",
+    name: `${product.name} — overview`,
     url: canonical,
     ...(description ? { description } : {}),
-    ...(image ? { image: product.images.map((i) => i.url).slice(0, 6) } : {}),
-    ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
-    ...(product.manufacturer ? { manufacturer: { "@type": "Organization", name: product.manufacturer } } : {}),
-    ...(category ? { category: category.name } : {}),
+    ...(image ? { primaryImageOfPage: { "@type": "ImageObject", url: image } } : {}),
+    about: {
+      "@type": "Thing",
+      name: product.name,
+      ...(description ? { description } : {}),
+      ...(image ? { image: product.images.map((i) => i.url).slice(0, 6) } : {}),
+      ...(category ? { additionalType: category.name } : {}),
+    },
   };
 
   const crumbs = [{ name: "Products", item: `${siteUrl}/products` }];

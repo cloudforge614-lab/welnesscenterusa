@@ -3,7 +3,7 @@ import { SiteHeader } from "@/components/public/site-nav";
 import { BrandLogo } from "@/components/public/brand-logo";
 import { Analytics } from "@/components/public/analytics";
 import type { Metadata } from "next";
-import { analyticsEnabled, gaMeasurementId, googleSiteVerification } from "@/lib/env";
+import { analyticsEnabled, gaMeasurementId, gtmContainerId, googleSiteVerification } from "@/lib/env";
 import { safeJsonLd } from "@/lib/content/json-ld";
 import { buildSiteStructuredData } from "@/lib/seo/structured-data";
 
@@ -48,6 +48,26 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(buildSiteStructuredData()) }}
       />
+
+      {/* Google Tag Manager. React hoists the async <script src> into <head>;
+          the inline script is the dataLayer initialiser supplied with the
+          container. Public layout only, so staff pages never load it. The
+          gtm.start push is what makes the container's "Page View" trigger
+          fire when gtm.js is loaded this way. */}
+      {gtmContainerId && (
+        <>
+          <script async src={`https://www.googletagmanager.com/gtm.js?id=${gtmContainerId}`} />
+          <script
+            dangerouslySetInnerHTML={{
+              __html:
+                "window.dataLayer = window.dataLayer || [];" +
+                "function gtag(){dataLayer.push(arguments);}" +
+                "gtag('js', new Date());" +
+                "window.dataLayer.push({'gtm.start': new Date().getTime(), event: 'gtm.js'});",
+            }}
+          />
+        </>
+      )}
 
       {/* Mounted here, in the public layout, rather than the root layout. That
           is the whole of the staff-exclusion mechanism: /admin, /agency and

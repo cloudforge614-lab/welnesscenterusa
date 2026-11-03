@@ -33,8 +33,15 @@ const isDev = process.env.NODE_ENV === "development";
 // img-src already allows https: for product imagery, so GA's pixel fallback
 // needs no further grant.
 const analyticsConfigured = Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
-const GA_SCRIPT_SRC = analyticsConfigured ? " https://www.googletagmanager.com" : "";
-const GA_CONNECT_SRC = analyticsConfigured
+// Google Tag Manager (NEXT_PUBLIC_GTM_ID, default container baked in env.ts) needs
+// the same specific hosts: googletagmanager.com serves gtm.js and tags fetch
+// from it, and the google-analytics hosts receive GA4 beacons sent by tags in
+// the container. Any further third-party tag added inside Tag Manager will need
+// its own origin granted here — that is deliberate, not an oversight.
+const gtmConfigured = process.env.NEXT_PUBLIC_GTM_ID === undefined || process.env.NEXT_PUBLIC_GTM_ID !== "";
+const tagsConfigured = analyticsConfigured || gtmConfigured;
+const GA_SCRIPT_SRC = tagsConfigured ? " https://www.googletagmanager.com" : "";
+const GA_CONNECT_SRC = tagsConfigured
   ? " https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com"
   : "";
 

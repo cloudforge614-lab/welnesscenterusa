@@ -28,6 +28,14 @@ export const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL || null;
 export const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || null;
 export const analyticsEnabled = gaMeasurementId !== null;
 
+// Google Tag Manager container. The ID is public by design (it ships in every
+// page). Rendered in the public layout only, so /admin and /agency never load
+// it. Set NEXT_PUBLIC_GTM_ID to a different container, or to an empty string
+// to switch it off. NOTE: unlike the cookieless GA4 setup above, tags added
+// inside the container can set cookies and send data to third parties — what
+// they do is controlled in Tag Manager, not in this repository.
+export const gtmContainerId = process.env.NEXT_PUBLIC_GTM_ID === undefined ? "GTM-TP2Q4HZM" : process.env.NEXT_PUBLIC_GTM_ID || null;
+
 // The token from Search Console's "HTML tag" verification method. Public by
 // design (it is meant to be read off the page). Rendered into <head> only when
 // set; see the Search Console note in .env.example for what still has to
